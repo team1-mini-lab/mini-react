@@ -13,11 +13,11 @@
 
 ## 1. 목표 (LMS 과제 요구사항)
 
-- 사용자의 입력에 따라 Virtual DOM을 생성하고 변경 사항을 비교하는 웹 페이지를 만든다.
+- 사용자의 HTML 입력에 따라 Virtual DOM을 생성하고 변경 사항을 비교하는 웹 페이지를 만든다.
 - 핵심은 **전체를 다시 그리지 않고 필요한 부분만 업데이트**하는 것이다.
 - Diff로 변경 사항을 찾고 Patch로 실제 DOM을 수정한다.
-- **뒤로가기·앞으로가기**로 History에 저장된 특정 Virtual DOM으로 이동한다.
-- Undo/Redo 실행 시 **실제 영역과 테스트 영역이 함께** 바뀐다.
+- **Undo/Redo**로 History에 저장된 특정 Virtual DOM 상태로 이동한다.
+- Undo/Redo 실행 시 **실제 영역과 테스트 영역을 함께** 갱신한다.
 
 ## 2. 쉬운 말 사전
 
@@ -64,31 +64,29 @@ flowchart TD
 ```
 
 ```text
-src/core/
-  vnode.ts
-  dom.ts
-  diff.ts
-  patch.ts
-  history.ts
-  errors.ts
-
-src/pages/
-  phase1/
-    index.html
-    main.ts
-    init.ts
-
+src/
+  core/
+    vnode.ts
+    dom.ts
+    diff.ts
+    patch.ts
+    history.ts
+    errors.ts
+  pages/
+    phase1/
+      index.html
+      main.ts
+      init.ts
 tests/
   unit/
   integration/
   property/
   helpers/
-
 docs/
   SRS.md
   SDD.md
   SDD_one_page.md
-  design_map.svg
+  design_map_phase1.svg
   adr/
 ```
 
@@ -96,22 +94,22 @@ docs/
 
 | 데이터 | 필드 | 역할 |
 |---|---|---|
-| `VNode` | `type`, `tag`, `props`, `children`, `key?` | 설계도 한 조각 |
-| `Patch` | `CREATE`·`REMOVE`·`REPLACE`·`TEXT`·`PROPS` + `path` | 고칠 목록 한 줄 |
-| `History<T>` | `entries[]`, `index` | 세이브 슬롯 |
+| `VNode` | `type`, `tag`, `props`, `children`, `key?` | Virtual DOM 노드 |
+| `Patch` | `CREATE`·`REMOVE`·`REPLACE`·`TEXT`·`PROPS` + `path` | DOM 변경 작업 |
+| `History<T>` | `entries[]`, `index` | 상태 및 현재 기록 위치 |
 
 | 주요 함수 | 입력 → 출력 | 하는 일 |
 |---|---|---|
-| `domToVNode(node)` / `htmlToVNode(html)` | DOM·HTML → `VNode` | 설계도 그리기 |
-| `diff(old, new)` | `VNode` 2개 → `Patch[]` | 틀린 그림 찾기 |
-| `applyPatches(root, patches)` | 화면, `Patch[]` → 결과 | 바뀐 곳만 고치기 (대상을 찾지 못하면 적용하지 않음) |
+| `domToVNode(node)` / `htmlToVNode(html)` | DOM·HTML → `VNode` | DOM을 Virtual DOM으로 변환 |
+| `diff(old, new)` | `VNode` 2개 → `Patch[]` | 변경 사항 비교 |
+| `applyPatches(root, patches)` | DOM, `Patch[]` → 결과 | Patch를 실제 DOM에 적용 |
 | `History.push()` | 새 상태 → 상태 | 변경 이력 저장 |
-| `History.undo()` | 현재 상태 → 이전 상태 또는 `null` | 이전 기록으로 이동 |
-| `History.redo()` | 현재 상태 → 다음 상태 또는 `null` | 다음 기록으로 이동 |
+| `History.undo()` | 이전 상태 또는 `null` | 이전 기록으로 이동 |
+| `History.redo()` | 다음 상태 또는 `null` | 다음 기록으로 이동 |
 | `History.goTo(i)` | 인덱스 → 상태 또는 `null` | 특정 기록으로 이동 |
 | `vnodeToHTML(vnode)` | `VNode` → HTML 문자열 | 테스트 영역에 표시할 HTML 생성 |
 
-전체 함수 명세는 `SDD.md` 부록 A.
+전체 함수 명세는 `SDD.md` 3장 및 관련 부록을 참고한다.
 
 ## 6. 동작 흐름과 결정 이유 (Interaction · State · Rationale)
 
@@ -121,9 +119,9 @@ docs/
 
 변경 사항이 없으면 History에 새 기록을 추가하지 않는다.
 
-**Phase 1: 뒤로·앞으로 가기**
+**Phase 1: Undo / Redo**
 
-`history.undo()`·`redo()`·`goTo(i)` → 이전 VNode와 이동할 VNode 비교 → `diff + patch`로 실제 영역 갱신 → `vnodeToHTML`로 테스트 영역 갱신.
+`history.undo()` 또는 `history.redo()` → 이전 VNode와 이동할 VNode 비교 → `diff + applyPatches`로 실제 영역 갱신 → `vnodeToHTML`로 테스트 영역 갱신.
 
 두 영역은 동일한 History 상태를 기준으로 함께 변경한다.
 
@@ -134,7 +132,7 @@ stateDiagram-v2
     B --> C: Patch
     C --> B: Undo
     B --> C: Redo
-    B --> D: 고치고 Patch
+    B --> D: 새 HTML 입력 후 Patch
     D --> C: 새 기록 저장
 ```
 
@@ -144,7 +142,7 @@ stateDiagram-v2
 | 0002 | 뒤로 간 뒤 새로 Patch하면 뒤쪽 기록 삭제 | proposed |
 | 0003 | 테스트 영역은 HTML 입력칸 + 미리보기 | proposed |
 | 0004 | 같은 자리끼리 비교 + 5가지 Patch (key는 확장) | proposed |
-| 0005 | Patch는 대상을 모두 찾은 뒤 한 번에 적용 | proposed |
+| 0005 | Patch 대상 경로를 먼저 확인한 뒤 적용 | proposed |
 | 0008 | 테스트 하네스: Vitest + jsdom | proposed |
 | 0009 | 설계 준수를 하네스로 자동 검증 | proposed |
 
@@ -160,7 +158,7 @@ stateDiagram-v2
 | L4 불변식 | 다양한 VNode 쌍에도 `applyPatches(root, diff(a, b))` 결과가 b와 같은가 | fast-check |
 | L5 빠짐 | SRS의 Phase 1 관련 VT에 대응하는 테스트가 모두 존재하나 | `scripts/check-trace.ts` |
 
-AI가 작성한 코드를 이해했는지는 **원리 설명 질문 카드**(`SDD.md` 부록 B)로 확인한다. 담당자가 구현 원리를 설명하지 못하면 PR을 병합하지 않는다.
+AI가 작성한 코드를 이해했는지는 **원리 설명 질문 카드**로 확인한다. 담당자가 구현 원리를 설명하지 못하면 PR을 병합하지 않는다.
 
 ## 8. 추적성 (요구사항 → 설계 → 검증)
 
@@ -170,4 +168,4 @@ AI가 작성한 코드를 이해했는지는 **원리 설명 질문 카드**(`SD
 | FR-03~06 Patch, 부분 갱신 | 3.3, 3.4 | VT-03~06, 20, 27~29, 31 | |
 | FR-07~08 History, Undo/Redo | 3.5, 3.6 | VT-07~09, 30 | #23, #25, #26 |
 
-설계 번호(3.x)는 전체 설계문서 `SDD.md`의 절 번호다. 검증 항목은 SRS v1.0의 Phase 1 관련 VT를 기준으로 한다.
+설계 번호(3.x)는 전체 설계문서 `SDD.md`의 절 번호다. 검증 항목은 SRS v1.0의 Phase 1 관련 VT를 기준으로 한다. FR·VT 번호 및 이슈 대응은 SRS 원문과 최종 대조 후 확정한다.
