@@ -2,7 +2,7 @@
 
 2026-11-09 · 프로젝트 팀 (초안: AI, 검토·결정: 팀)
 
-> 한 장 요약은 `SDD_one_page.md`, 설계 지도는 `design_map.svg`, 설계 결정의 근거는 `adr/`를 참고한다.
+> 한 장 요약은 `SDD_one_page.md`, 설계 지도는 `design_map_phase1.svg`, 설계 결정의 근거는 `adr/`를 참고한다.
 
 ## 0. 한 장 요약 (쉬운 말)
 
