@@ -9,7 +9,7 @@
 | 기준 | SRS v1.0 (ISO/IEC/IEEE 29148), ADR-0001 TypeScript |
 | 작성 | 프로젝트 팀 (초안: AI, 결정·검토: 팀) |
 
-![설계 한 장 지도](./design_map.svg)
+![설계 한 장 지도](./design_map_phase1.svg)
 
 ## 1. 목표 (LMS 과제 요구사항)
 
