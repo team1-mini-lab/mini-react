@@ -16,7 +16,11 @@ SRS CON-05는 DOM API를 쓰는 모듈의 테스트를 DOM 테스트 환경에�
 ## Decision Drivers
 
 * TypeScript를 별도 설정 없이 실행할 수 있는가 (ADR-0007)
+<<<<<<<< HEAD:docs/adr/ADR_0011_test_harness.md
 * `<template>`, MutationObserver 등 DOM API 지원 (CON-05)
+========
+* DOMParser, MutationObserver 등 DOM API 지원 (CON-05)
+>>>>>>>> origin/main:docs/adr/adr_0011_test_harness.md
 * 개발 서버·빌드 도구와 설정 공유
 * 실행 속도와 watch 모드
 * 팀원의 학습 비용
