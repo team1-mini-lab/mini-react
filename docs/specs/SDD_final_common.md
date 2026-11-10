@@ -52,6 +52,16 @@ SRS는 ISO/IEC/IEEE 29148, SDD는 IEEE 1016의 관점 구조를 과제 규모에
 | ISO/IEC/IEEE 29119-3:2021 | 테스트 문서 | VT 증거표, `report/REPORT.md` |
 | MADR | ADR 템플릿 | `docs/adr/` |
 
+## 1.1 이 문서를 읽는 사람과 먼저 볼 곳
+
+| 읽는 사람 | 궁금한 점 | 먼저 볼 곳 |
+| --- | --- | --- |
+| 구현 담당 | 내가 만들 함수의 입력·출력, 다른 모듈과의 약속 | phase1 1.2·2장·부록 A, phase2 2장·부록 A, 이 문서 6장 |
+| 테스트 담당 | VT를 어떻게 확인하나, 예외는 어떻게 처리하나 | phase1 8장·9.4, 이 문서 3장 |
+| 발표자 / 새 팀원 | 전체가 어떻게 돌아가나, 왜 이렇게 정했나 | 이 문서 0장·부록 B, `docs/adr/README.md` |
+| 코치 / 평가자 | 요구사항을 다 담았나, 원리를 설명할 수 있나 | phase1 9.3, phase2 6장, `report/REPORT.md`, 이 문서 부록 B·D |
+| AI 코딩 도구 | 지켜야 할 규칙과 통과해야 할 검사 | phase1 2장·10장, 이 문서 3.4, `AGENTS.md` |
+
 ## 2. GitHub Issue 대응
 
 | Issue | 완료 조건 | 충족하는 곳 |
@@ -111,6 +121,61 @@ SRS는 ISO/IEC/IEEE 29148, SDD는 IEEE 1016의 관점 구조를 과제 규모에
 | `<script>`·`onclick`·`javascript:` 입력 | VT-21, S1~S4 | 변환 시 건너뜀 |
 
 수동 체크리스트는 `docs/verification/checklist-phase1.md`, `checklist-phase2.md`에 있다. `check:vt`가 체크된 항목(`- [x] VT-xx`)을 증거로 센다.
+
+### 3.4 L2 아키텍처 규칙 (Phase 1 구현 때 `check:arch`·`lint`로 켬)
+
+```javascript
+// .dependency-cruiser.cjs — 의존 방향 (phase1 2.1)
+module.exports = { forbidden: [
+  { name: 'core-is-independent', severity: 'error',
+    from: { path: '^src/core' }, to: { path: '^src/(component|pages)' } },
+  { name: 'component-not-pages', severity: 'error',
+    from: { path: '^src/component' }, to: { path: '^src/pages' } },
+  { name: 'no-circular', severity: 'error', from: {}, to: { circular: true } },
+  { name: 'no-ui-framework', severity: 'error',
+    from: {}, to: { path: 'node_modules/(react|react-dom|vue|preact|svelte)/' } },
+]};
+```
+
+```javascript
+// eslint.config.js — "실제 영역을 바꾸는 코드는 core/patch.ts 한 곳" (phase1 2.1)
+{
+  files: ['src/**/*.ts'],
+  ignores: ['src/core/patch.ts', 'src/core/dom.ts', 'src/pages/**'],
+  rules: { 'no-restricted-syntax': ['error',
+    { selector: "CallExpression[callee.property.name=/^(appendChild|removeChild|replaceWith|replaceChildren|insertBefore|remove|setAttribute|removeAttribute)$/]",
+      message: '실제 영역 DOM 변경은 core/patch.ts의 applyPatch·recoverPatch·mountTree로만 한다 (SDD_final_phase1 2.1).' },
+    { selector: "AssignmentExpression[left.property.name=/^(innerHTML|outerHTML|textContent|nodeValue)$/]",
+      message: 'innerHTML 등 직접 대입 금지. 코드 읽기는 core/html.ts의 <template>에서만 (SDD_final_phase1 3.3).' },
+  ]},
+},
+{
+  files: ['src/core/diff.ts'],
+  rules: { 'no-restricted-syntax': ['error',
+    { selector: "MemberExpression[property.name=/^(dom|events)$/]",
+      message: 'Diff는 dom·events를 읽지 않는다 (ADR-0004 dom 규칙 5, ADR-0015 3절).' } ]},
+}
+```
+
+- `pages/**`는 미리보기·트리 보기·컨트롤 UI를 그리므로 위 규칙에서 빼되, **실제 영역(`#real-area`) 안을 직접 고치는 코드가 없는지는 코드 검토(VT-22)**로 본다.
+- `dom.ts`는 화면 밖 노드를 만들 때만 `setAttribute`·`appendChild`를 쓴다(ADR-0003). `html.ts`의 `<template>.innerHTML` 한 곳은 줄 단위 `eslint-disable`과 근거 주석으로 허용한다.
+- 규칙 메시지에 설계 문서 절 번호를 넣어, 위반한 사람(또는 AI)이 메시지만 보고 고칠 곳을 알게 한다.
+
+### 3.5 설계 변경 순서와 AI 도구 연결
+
+- **설계 변경 순서**: ADR 작성(proposed) → 팀 승인(accepted) → SRS·SDD 수정 → `check:docs` 통과 → 하네스 규칙 수정 → 구현. 문서와 하네스 수정은 같은 PR에 넣는다.
+- **PR 템플릿**: "설계를 바꿨다면 ADR 링크" 칸. 하네스 규칙을 고치는 PR은 ADR 없이 병합하지 않는다.
+- **AI 도구 안내 파일**: 루트 `AGENTS.md`에 "설계는 `docs/specs/SDD_final_*.md`, 결정은 `docs/adr/`, 작업 후 `npm run report`" 만 짧게 적는다.
+- **CI**: push·PR·main 머지마다 `scripts/ci/verify.yml`(→ `.github/workflows/verify.yml`)이 `report.py`를 돌린다. main 보호 규칙의 필수 체크로 등록한다.
+
+### 3.6 하네스 도입 순서 (지금 위치 표시)
+
+1. ✅ Vite + Vitest + jsdom + `typecheck`, 환경 확인 테스트(VT-35)
+2. ✅ L5 문서 추적성(`check:docs`), 하네스 자체 점검(`test:harness`), `check:stack`, `check:trace`, 보고서(`report.py`)
+3. ⏸ G2: 참조 모델로 설계 반증 (4.2), 반례 판정, ADR 승인
+4. ⏸ Phase 1 구현: React 제거, L1 시그니처(`expectTypeOf`), L2(`check:arch`·`lint`), 모듈별 L3 테스트(ADR 표를 그대로 옮김)
+5. ⏸ Phase 1 완료: L4 불변식, L6 Playwright, 3-way 교차 검증 (4.3)
+6. ⏸ Phase 2 같은 순서, 마지막에 L7 뮤테이션과 요구사항 보증 점수 (4.4)
 
 ## 4. 설계 반증과 교차 검증 (차별화의 핵심)
 
@@ -232,3 +297,42 @@ IEEE 1016·ISO 29148에는 공식 점수가 없다. 표준이 "들어 있어야 
 | [#26 P1-9 이동 버튼 비활성화](https://github.com/team1-mini-lab/mini-react/issues/26) | ADR-0008 (m3, 0.3초 틈 막기) | phase1 7.3 | VT-30, VT-48 |
 | [#27 P1-10 화면 구성](https://github.com/team1-mini-lab/mini-react/issues/27) | ADR-0006, 피드백 02 | phase1 7.1~7.4 | VT-32~VT-34, VT-41 |
 | P1-1~P1-6 | ADR-0001~0005 | phase1 2~5장 | phase1 9.3 |
+
+## 부록 F. `SDD-3.md`(v0.6, 보관용) → 지금 위치
+
+`SDD-3.md`의 각 절이 어디로 옮겨졌는지 적는다. "옮기지 않음"은 이유를 함께 적는다.
+
+| SDD-3 절 | 지금 위치 | 비고 |
+| --- | --- | --- |
+| 0 한 장 요약 | 이 문서 0장 | CON-01, 참조 모델 줄 추가 |
+| 1.1 TBD와 설계의 전제 | SRS 6장, phase1 9.3·phase2 6.1의 TBD 행 | 결정은 SRS가 기준 |
+| 1.2 참고 표준 | 이 문서 1장 | IEEE 1012·1028 추가 |
+| 1.3 Issue 대응 | 이 문서 2장 | |
+| 1.4 읽는 사람 | 이 문서 1.1 | |
+| 1.5 변경 이력 | 옮기지 않음 | 각 final 문서 머리의 변경 요약이 대신함 |
+| 1.6 이름 대응표 | phase1 1.2 | final에 이미 있음 |
+| 2 아키텍처, 2.1 디렉터리, 2.2 모듈 책임 | phase1 2.1·2.3 | |
+| 3.1~3.6 Phase 1 설계 | phase1 2~7장 | final이 더 새 결정(t3·s2·`events`·`#editor`) |
+| 4 Phase 2 | phase2 전체 | |
+| 5 예외 처리 | phase1 8장 | |
+| 6.1 테스트 환경 | phase1 10장, 이 문서 3.1 | |
+| 6.2 테스트 파일과 VT | phase1 9.4 | |
+| 6.3 측정 도구 | 이 문서 3.2 | `move` 기록 2건 실측 반영 |
+| 6.4 대표 시나리오 | 이 문서 3.3 | |
+| 6.5 기능 체크리스트 | `docs/verification/checklist-phase1.md` | `check:vt`가 증거로 셈 |
+| 7.1 추적성 | phase1 9.3 | |
+| 7.2 SRS에 반영할 항목 | 옮기지 않음 | SRS 1.3·1.4에서 반영 끝 |
+| 7.3 남은 설계 결정 | phase1 11장 | "수정 취소" 버튼, 성능 목표 추가 |
+| 8.1~8.2 하네스 범위·7계층 | phase1 10장, 이 문서 3.1 | 상태 열 추가 |
+| 8.3 L4 불변식 | phase1 10.3 | `move` 기록 수 줄 고침 |
+| 8.4 L2 규칙 예시 | 이 문서 3.4 | `recoverPatch`·`events` 반영 |
+| 8.5 추적성 검사·실행 방법 | phase1 10.1·10.2, `docs/VERIFICATION_GUIDE.md` | `check-trace.ts` 대신 `check_docs.py`·`check_trace.py` |
+| 8.6 CI·AI 도구 | 이 문서 3.5 | |
+| 8.7 도입 순서 | 이 문서 3.6 | 진행 표시 |
+| 9 역할 분담 | 이 문서 6장 | ADR-0013·0014 대신 0015 |
+| 부록 A 함수 명세 | phase1·phase2 부록 A | |
+| 부록 B 질문 카드 | 이 문서 부록 B | |
+| 부록 C 차별화 (+C-4 트리 보기) | 이 문서 5장, phase1 7.4 | 채택·제외 상태 표시 |
+| 부록 D 표준 점검 | 이 문서 부록 D | 숫자는 하네스 출력에서 |
+| 부록 E 이슈 매핑·댓글 초안 | 이 문서 부록 E | 댓글 초안은 옮기지 않음 (이슈에 이미 게시 여부 확인 필요) |
+
