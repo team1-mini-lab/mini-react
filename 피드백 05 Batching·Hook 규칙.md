@@ -1,9 +1,8 @@
 # 설계 피드백 05: Batching (#42) + Hook 규칙 검사 (#43)
 
-> **표시 안내**: `🙋 확인 필요`는 아직 합의하지 않은 부분이다. 표시가 없는 내용은 검토 대화에서 결정했다.
 
 - 검토 대상: `batching.md`(통합 번호 ADR-0009), `hook_rule_enforcement.md`(통합 번호 ADR-0010), SDD 4.1 `renderingChild`, 4.4 스케줄러, 4.6 Hook 호출 규칙 검사, 5장 해당 행
-- 기준 문서: 리액트 issue.md(TBD-05, FR-11, FR-16, C-06, C-07), ADR-0013, 피드백 04
+- 기준 문서: 리액트 issue.md(TBD-05, FR-11, FR-16, C-06, C-07), ADR-0015, 피드백 04
 - 공통 사항(issue.md 기준, ADR 통합 번호표)은 피드백 01의 0절과 같다.
 
 ## 1. 결론 요약
@@ -34,7 +33,7 @@
 | 렌더링마다 Hook 개수가 다름 (if문 안 호출) | 렌더링 후 이번 개수 ≠ 칸 개수 | `HookOrderError` |
 | 같은 칸의 종류가 다름 (순서가 바뀜) | 칸에 적힌 종류 ≠ 이번에 부른 종류 | `HookOrderError` |
 
-- 두 번째 줄이 특히 중요하다. 자식 컴포넌트는 `h` 안에서 바로 실행되므로(ADR-0013), 그동안에도 "지금 렌더링 중인 컴포넌트"는 루트다. 표시가 없으면 자식의 `useState`가 루트의 칸을 조용히 가져다 쓴다.
+- 두 번째 줄이 특히 중요하다. 자식 컴포넌트는 `h` 안에서 바로 실행되므로(ADR-0015), 그동안에도 "지금 렌더링 중인 컴포넌트"는 루트다. 표시가 없으면 자식의 `useState`가 루트의 칸을 조용히 가져다 쓴다.
 - 개수와 종류가 우연히 같은 조건부 호출은 실행 중에 잡을 수 없다. 이 한계를 코드 검토 항목으로 보완한다는 팀원 판단도 그대로 가져간다.
 - ESLint 규칙만으로 검사하는 방법은 규칙 작성 비용이 크고 실행 중 위반을 놓친다는 팀원 판단에 동의한다.
 
@@ -51,7 +50,7 @@
 
 ### 3-2. `unmount` 관련 내용 삭제
 
-`unmount()`를 두지 않으므로(ADR-0013) 스케줄러와 Hook 규칙 문서의 `unmount` 관련 문장을 지운다.
+`unmount()`를 두지 않으므로(ADR-0015) 스케줄러와 Hook 규칙 문서의 `unmount` 관련 문장을 지운다.
 
 ## 4. 추가할 것
 
@@ -107,7 +106,7 @@ setter를 부르거나 클릭한 뒤 화면·상태를 확인하는 테스트는
 
 ## 8. 참고 문서
 
-- 기준 문서: 리액트 issue.md(TBD-05, FR-11, FR-16, C-06), ADR-0013(`h`가 자식을 바로 실행, `unmount` 제외), 피드백 04(Hook 저장 칸)
+- 기준 문서: 리액트 issue.md(TBD-05, FR-11, FR-16, C-06), ADR-0015(`h`가 자식을 바로 실행, `unmount` 제외), 피드백 04(Hook 저장 칸)
 - 검토 대상: `batching.md`, `hook_rule_enforcement.md`, SDD.md 4.1, 4.4, 4.6, 5장
 - 검토 과정: [미니 리액트 개발 일지 ㅡ 팀 설계 검토: Batching(#42)과 Hook 규칙 검사(#43)](https://eutopiaa.tistory.com/101)
 - 팀원 문서의 참고 링크: [React 18: Automatic Batching](https://react.dev/blog/2022/03/29/react-v18#new-feature-automatic-batching), [MDN queueMicrotask](https://developer.mozilla.org/en-US/docs/Web/API/Window/queueMicrotask), [React 문서: Rules of Hooks](https://react.dev/reference/rules/rules-of-hooks)

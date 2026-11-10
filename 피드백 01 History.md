@@ -10,7 +10,7 @@
 | 항목 | 내용 |
 |---|---|
 | 요구사항 기준 | 팀 요구사항 문서인 **issue.md**(FR-01~FR-18, NFR-01~04, C-01~08, TBD-01~06)를 기준으로 한다. SDD의 FR-19~FR-23, VT-01~VT-35, IR·PR ID는 쓰지 않는다 |
-| ADR 번호 | PR #50 `adr_README.md`의 통합 번호표를 따른다. ADR-0001~0006(통과된 6개), ADR-0007(프로그래밍 언어, accepted), ADR-0008(History), ADR-0009(Batching), ADR-0010(Hook 규칙), ADR-0011~0012(하네스) |
+| ADR 번호 | PR #50 `adr_README.md`의 통합 번호표를 따른다. ADR-0001~0006(통과된 6개), ADR-0007(프로그래밍 언어, accepted), ADR-0008(History), ADR-0009(Batching), ADR-0010(Hooks), ADR-0011~0012(하네스). `eungi` 브랜치의 ADR-0013(Patch 사전 확인)·ADR-0014(입력 정제)는 superseded로 옮기고(피드백 02 5-1), 컴포넌트 렌더링은 **ADR-0015**로 매긴다 |
 | Phase 1 설계 | SDD 3.1~3.4, 3.6 중 ADR-0001~0006과 겹치는 부분(노드 모양, 변환, Diff 5종·path, Patch, 테스트 영역)은 통과된 ADR을 따른다 |
 | 언어 | TypeScript로 결정됨. 설계는 언어와 상관없는 로직으로 적는다 |
 

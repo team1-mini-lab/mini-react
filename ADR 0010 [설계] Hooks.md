@@ -54,7 +54,7 @@ Chosen options: **hooks 배열 + 호출 순서 번호 + 실행 중 검사, f1, g
 ### 1. Hook 저장 칸
 
 ```
-FunctionComponent (ADR-0013)
+FunctionComponent (ADR-0015)
   hooks: [ 칸0, 칸1, 칸2, ... ]   ← 컴포넌트 함수 밖에 있어서, 함수가 다시 실행돼도 남아 있음
   hookIndex: 렌더링마다 0부터 다시 셈
 
@@ -90,14 +90,14 @@ App 실행 중
 
 **effect 실행 순서** (렌더링 한 번이 끝난 뒤):
 
-effect는 `update()`(ADR-0013)의 Patch, `dom` 복사·기록, 핸들러 바꿔 끼우기가 모두 끝난 뒤 실행한다. Patch 실패 복구(ADR-0005 6절)가 일어나도 실행한다. effect 칸을 앞에서부터 차례로 보며:
+effect는 `update()`(ADR-0015)의 Patch, `dom` 복사·기록, 핸들러 바꿔 끼우기가 모두 끝난 뒤 실행한다. Patch 실패 복구(ADR-0005 6절)가 일어나도 실행한다. effect 칸을 앞에서부터 차례로 보며:
 
 1. 이번 렌더링에서 실행하기로 정해진 effect인가? (위 표)
 2. 그렇다면, 이전 실행이 남긴 정리 함수가 있으면 먼저 부른다 (g1).
 3. effect를 실행하고, 돌려준 값이 함수면 정리 함수로 칸에 저장한다.
 
 - effect 하나가 오류를 내도 다른 effect는 계속 실행하고, 오류는 `console.error`로 남긴다.
-- 정리 함수는 "다시 실행하기 직전"에만 부른다. `unmount()`가 없으므로(ADR-0013) 컴포넌트가 내려갈 때 부르는 경우는 없다.
+- 정리 함수는 "다시 실행하기 직전"에만 부른다. `unmount()`가 없으므로(ADR-0015) 컴포넌트가 내려갈 때 부르는 경우는 없다.
 - effect는 Patch 직후 동기적으로 실행한다. 실제 리액트는 브라우저가 화면을 그린 뒤 조금 늦게 실행한다. "실제 리액트와의 차이점"으로 설명한다.
 
 ### 4. Hook 호출 규칙 검사
@@ -105,11 +105,11 @@ effect는 `update()`(ADR-0013)의 Patch, `dom` 복사·기록, 핸들러 바꿔 
 | 잘못된 호출 | 잡는 방법 | 오류 |
 |---|---|---|
 | 컴포넌트 밖에서 호출 (버튼 핸들러, effect 안 등) | 지금 렌더링 중인 컴포넌트가 없음 | `HookCallError` |
-| 자식 컴포넌트에서 호출 | `h`의 "자식 실행 중" 표시가 켜져 있음 (ADR-0013) | `HookCallError` |
+| 자식 컴포넌트에서 호출 | `h`의 "자식 실행 중" 표시가 켜져 있음 (ADR-0015) | `HookCallError` |
 | 렌더링마다 Hook 개수가 다름 (if문 안 호출) | 렌더링 후 이번 개수 ≠ 칸 개수 | `HookOrderError` |
 | 같은 칸의 종류가 다름 (순서가 바뀜) | 칸에 적힌 종류 ≠ 이번에 부른 종류 | `HookOrderError` |
 
-- 두 번째 줄이 특히 중요하다. 자식 컴포넌트는 `h` 안에서 바로 실행되므로(ADR-0013), 그동안에도 "지금 렌더링 중인 컴포넌트"는 루트다. 표시가 없으면 자식의 `useState`가 루트의 칸을 조용히 가져다 쓴다.
+- 두 번째 줄이 특히 중요하다. 자식 컴포넌트는 `h` 안에서 바로 실행되므로(ADR-0015), 그동안에도 "지금 렌더링 중인 컴포넌트"는 루트다. 표시가 없으면 자식의 `useState`가 루트의 칸을 조용히 가져다 쓴다.
 - 검사는 렌더링 도중, 즉 Diff·Patch 전에 오류를 낸다. 그래서 화면은 이전 상태로 남고 콘솔에 오류가 남는다.
 - 개수와 종류가 우연히 같은 조건부 호출은 실행 중에 잡을 수 없다. 코드 검토로 보완한다.
 - 오류는 클래스로 구분하고, 테스트는 메시지가 아니라 클래스로 판별한다.
@@ -205,7 +205,7 @@ effect는 `update()`(ADR-0013)의 Patch, `dom` 복사·기록, 핸들러 바꿔 
 ### 관련 자료
 
 - 바탕 문서: 팀원 `hook_rule_enforcement.md` (원래 번호 adr_007, "Hook 상태 저장 방식과 호출 규칙 강제"). 이 ADR에서 "Hooks"로 범위를 넓혔다.
-- 선행 결정: ADR-0013 (`FunctionComponent`, `h`의 자식 즉시 실행, `unmount` 제외), ADR-0009 (다시 그리기 예약, 반복 실행 안전장치), ADR-0005 6절 (Patch 실패 복구)
+- 선행 결정: ADR-0015 (`FunctionComponent`, `h`의 자식 즉시 실행, `unmount` 제외), ADR-0009 (다시 그리기 예약, 반복 실행 안전장치), ADR-0005 6절 (Patch 실패 복구)
 - 검토 과정: [미니 리액트 개발 일지 ㅡ 팀 설계 검토: useState(#39), useEffect(#40), useMemo(#41)](https://eutopiaa.tistory.com/100), [미니 리액트 개발 일지 ㅡ 팀 설계 검토: Batching(#42)과 Hook 규칙 검사(#43)](https://eutopiaa.tistory.com/101)
 - [React 문서: Rules of Hooks](https://react.dev/reference/rules/rules-of-hooks)
 - 요구사항: [미니 리액트 프로젝트 ㅡ 요구사항 정리](https://eutopiaa.tistory.com/90) — 관련 ID: FR-15~FR-18, C-05~C-07

@@ -47,7 +47,7 @@ Chosen option: **b1**, because 구현은 20줄쯤이고 테스트에서 화면�
 |---|---|
 | setter (ADR-0010) | 값이 바뀌었으면 저장하고 `scheduleUpdate()`를 부른다 |
 | `scheduleUpdate()` | "다시 그리기 필요" 표시를 켠다. 아직 예약이 없으면 `queueMicrotask(flush)`로 한 번만 예약한다 |
-| `flush()` | 표시가 켜져 있으면 끄고 `update()`(ADR-0013)를 한 번 부른다 |
+| `flush()` | 표시가 켜져 있으면 끄고 `update()`(ADR-0015)를 한 번 부른다 |
 | `flushSync()` | 테스트용. 예약된 다시 그리기를 지금 바로 실행한다 |
 
 - 루트 컴포넌트 하나뿐이라(C-06) 표시 하나로 충분하다.
@@ -69,7 +69,7 @@ effect 안에서 setter를 부르면 "다시 그리기 → effect → setter →
 
 ### 4. 테스트 작성 규칙
 
-setter를 부르거나 클릭한 뒤 화면·상태를 확인하는 테스트는, 확인 전에 `flushSync()`를 부른다. 빠뜨리면 코드가 맞아도 테스트가 실패한다. ADR-0013 C8, ADR-0010 K2~K5·K7~K11 등에 적용한다.
+setter를 부르거나 클릭한 뒤 화면·상태를 확인하는 테스트는, 확인 전에 `flushSync()`를 부른다. 빠뜨리면 코드가 맞아도 테스트가 실패한다. ADR-0015 C8, ADR-0010 K2~K5·K7~K11 등에 적용한다.
 
 ### Consequences
 
@@ -121,7 +121,7 @@ setter를 부르거나 클릭한 뒤 화면·상태를 확인하는 테스트는
 ### 관련 자료
 
 - 바탕 문서: 팀원 `batching.md` (원래 번호 adr_006)
-- 선행 결정: ADR-0013 (`update()`), ADR-0010 (setter)
+- 선행 결정: ADR-0015 (`update()`), ADR-0010 (setter)
 - 검토 과정: [미니 리액트 개발 일지 ㅡ 팀 설계 검토: Batching(#42)과 Hook 규칙 검사(#43)](https://eutopiaa.tistory.com/101)
 - [React 18: Automatic Batching](https://react.dev/blog/2022/03/29/react-v18#new-feature-automatic-batching), [MDN queueMicrotask](https://developer.mozilla.org/en-US/docs/Web/API/Window/queueMicrotask)
 - 요구사항: [미니 리액트 프로젝트 ㅡ 요구사항 정리](https://eutopiaa.tistory.com/90) — 관련 ID: FR-11, NFR-01, TBD-05
