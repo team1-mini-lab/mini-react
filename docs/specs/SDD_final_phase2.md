@@ -4,6 +4,8 @@
 
 > **v1.1 변경 (2026-11-10)**: SRS v1.4 ID 추적표와 VT별 테스트 위치(6장), Todo 페이지를 포함해 React·JSX 0(1.1), Hook 개수 증가 감지(2.4 ①, ADR-0010 HR4와 일치), 설계 검토 필요 항목(7장) 추가. 그 밖의 결정은 바꾸지 않았다.
 >
+> 공통 내용은 `SDD_final_common.md`에 있다.
+>
 > **문서 상태**: ADR-0009·0010·0015는 proposed다. accepted가 될 때까지 팀 검토 대상이다.
 
 > **기준 및 출처 안내**
@@ -382,18 +384,18 @@ export function flushSync(): void {
 | FR-12 | `render` → `mountTree`, 루트 1회 부착 | 2.2 | C1 | VT-10 |
 | FR-13 | `h(Component, props)`, 자식 즉시 펼침 | 2.1 | C4, C6, TD2 | VT-11 |
 | FR-14 | setter → `scheduleUpdate` → `update` → `diff`·`applyPatch` | 2.2, 2.4, 2.5 | C2, C3, K2, TD9 | VT-13 |
-| FR-15 | 루트 전용 State, 자식은 Props만 | 1.1, 3.1 | HR3, TD9 | VT-11 |
+| FR-15 | 루트 전용 State, 자식은 Props만 (`useState`, `HookCallError`) | 1.1, 3.1 | HR3, TD9 | VT-11 |
 | FR-16 | `useState` 초기값·`[state, setter]` | 2.4 ② | K1, K6 | VT-12 |
-| FR-17 | setter: 함수형 업데이트, `Object.is` 같으면 무시, 재렌더 예약 | 2.4 ② | K2, K3, K4, K5 | VT-13 |
-| FR-18 | effect를 Patch 직후 실행 | 2.2 7단계, 2.4 ③ | K10, K11, K14 | VT-14 |
-| FR-19 | `deps` 생략·`[]`·값 목록 | 2.4 ③ | K7, K8, K9 | VT-14 |
+| FR-17 | setter: 함수형 업데이트, `Object.is` 같으면 무시, 재렌더 예약 (`useState`, `scheduleUpdate`) | 2.4 ② | K2, K3, K4, K5 | VT-13 |
+| FR-18 | effect를 Patch 직후 실행 (`useEffect`, `update`) | 2.2 7단계, 2.4 ③ | K10, K11, K14 | VT-14 |
+| FR-19 | `deps` 생략·`[]`·값 목록 (`useEffect`, `depsChanged`) | 2.4 ③ | K7, K8, K9 | VT-14 |
 | FR-20 | `useMemo` | 2.4 ④ | K12, K13, TD7 | VT-15 |
 | FR-21 | `HookCallError`, `HookOrderError` | 2.4 ① | HR1, HR2, HR3, HR4, HR5, HR6 | VT-16 |
 | FR-22 | `update()` 안의 `diff` + `applyPatch`, `recoverPatch` 재사용 | 1.1, 2.2 | C3, C10 | VT-17 |
 | FR-23 | Todo 테스트 페이지 (React 없이) | 3장 | TD1~TD11 | VT-18 |
 | IR-07 | Phase 2 페이지의 입력·버튼 | 3.1 | TD3, TD6 | VT-18 |
-| IR-08 | setter | 2.4 ② | K2 | VT-13 |
-| CON-06 | 루트 전용 State | 1.1, 2.4 ① | HR3 | VT-11, VT-16 |
+| IR-08 | setter (`useState`, `scheduleUpdate`) | 2.4 ② | K2 | VT-13 |
+| CON-06 | 루트 전용 State (`useState`, `HookCallError`) | 1.1, 2.4 ① | HR3 | VT-11, VT-16 |
 | TBD-05 | microtask Batching | 2.5 | B1, B2, B3, B4, B5, B6 | VT-19 |
 
 ### 6.2 VT별 테스트 위치

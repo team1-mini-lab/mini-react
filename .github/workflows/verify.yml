@@ -1,17 +1,78 @@
-# SDD 8.6 — PR마다 npm run verify
+# 하네스 루프 (VERIFICATION_GUIDE 3장, ADR-0012)
+# - 어느 브랜치든 push할 때마다, PR을 열거나 고칠 때마다, main에 머지될 때마다 실행한다
+# - 결과는 ① Actions 요약 화면 ② PR 댓글(하나를 계속 고쳐 씀) ③ report 아티팩트로 남긴다
+# - 필수 관문(REQUIRED_GATES)이 통과하지 못하면 체크가 빨간불이 된다
+#   지금은 G1(SRS–SDD 정합성)만 필수. 단계가 진행되면 저장소 Settings → Variables에서 REQUIRED_GATES를 늘린다
 name: verify
+
 on:
   pull_request:
-  push:
     branches: [main]
+  push:
+    branches: ['**']   # 어느 브랜치든 push(코드 수정)할 때마다 보고서를 만든다
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  verify:
+  harness:
     runs-on: ubuntu-latest
+    env:
+      REQUIRED_GATES: ${{ vars.REQUIRED_GATES || 'G1' }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run verify
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # React·tailwind를 걷어낼 때까지 peer 충돌이 있어 --legacy-peer-deps가 필요하다
+      - name: Install
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Harness loop (report.py)
+        id: report
+        run: python3 scripts/report.py --ci
+        continue-on-error: true
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-report-${{ github.sha }}
+          path: report/
+          retention-days: 30
+
+      - name: Comment on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('report/REPORT.md')) return;
+            let body = fs.readFileSync('report/REPORT.md', 'utf8');
+            if (body.length > 60000) body = body.slice(0, 60000) + '\n\n…(잘림, 전체는 아티팩트)';
+            const marker = '<!-- mini-react-verify-report -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const old = comments.find(c => c.body && c.body.includes(marker));
+            if (old) await github.rest.issues.updateComment({ owner, repo, comment_id: old.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });
+
+      - name: Gate
+        if: steps.report.outcome == 'failure'
+        run: |
+          echo "필수 관문($REQUIRED_GATES) 미통과 — report/REPORT.md의 '관문 요약'과 '다음에 할 일'을 보세요"
+          exit 1

@@ -15,7 +15,9 @@
     "verify": "npm run typecheck && npm run check:stack && npm run check:docs && npm run test",
     "check:stack": "python3 scripts/check_stack.py",
     "test:harness": "python3 scripts/selftest_harness.py",
-    "verify:docs": "npm run check:docs && npm run test:harness"
+    "verify:docs": "npm run check:docs && npm run test:harness",
+    "check:trace": "python3 scripts/check_trace.py",
+    "report": "python3 scripts/report.py"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

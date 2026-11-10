@@ -357,6 +357,22 @@ hermes -z "$(cat docs/verification/prompts/5-tests.md)" > docs/verification/resu
 
 ---
 
+## 3-1. 하네스 루프와 보고서 (`npm run report`, GitHub Actions)
+
+`scripts/report.py`가 모든 검사를 한 번에 돌리고 `report/REPORT.md`를 만든다. **결론(관문 통과/멈춤)은 이 스크립트만 쓴다.**
+
+| 관문 | 통과 조건 | 근거 표준 |
+| --- | --- | --- |
+| G1 SRS–SDD 정합성 | `check:docs`·`test:harness` 통과, `1-docs` AI 지적 전부 판정 | IEEE 1012 요구사항·설계 V&V(추적성 분석), ISO/IEC/IEEE 29148 추적성 |
+| G2 SDD 설계 검증 | `2-design` 영역 A~F, 검토자(모델) 2명 이상, 반례 전부 사람 판정(`*.review.md`), ADR proposed·재확인 0, 열린 설계 항목 0 | IEEE 1012 설계 V&V, IEEE 1028 검토 |
+| G3 구현 | `typecheck`·`check:stack`·`check:arch`·`lint` 통과 | IEEE 1012 구현 V&V |
+| G4 VT 검증 | 테스트 전부 통과, 커버리지·뮤테이션 기준, VT 49개 증거(`check:vt`), 요구사항 사슬(`check:trace`) 끊김 0 | IEEE 1012 시험 V&V, ISO/IEC/IEEE 29119-3 테스트 완료 보고 |
+
+- **요구사항 사슬** (`check:trace`): SRS 요구사항 → SDD 추적표의 함수 이름 → 부록 A의 파일 → 코드에 그 함수가 있음 → 그 요구사항의 VT 테스트가 그 파일을 import → 테스트 통과. 한 칸이라도 끊기면 표에 ✗.
+- **사람 판정 파일**: AI 검토 결과 `X.md` 옆에 `X.review.md`를 두고 번호마다 `진짜 반례 / 기존 한계 / 아님`을 적는다. 판정이 없으면 G1·G2가 통과하지 않는다.
+- **필수 관문**: 저장소 Settings → Secrets and variables → Actions → Variables에 `REQUIRED_GATES`를 둔다. 지금은 `G1`. 설계 검증이 끝나면 `G1,G2`, 구현을 시작하면 `G1,G2,G3`, 마지막에 `G1,G2,G3,G4`.
+- **CI 설치 (한 번)**: `cp scripts/ci/verify.yml .github/workflows/verify.yml` 후 커밋. PR마다, 그리고 main에 머지될 때마다 실행되고, PR에는 보고서가 댓글로(하나를 계속 고쳐 씀), Actions 화면에는 요약으로, 아티팩트에는 `report/` 전체가 남는다.
+
 ## 4. Vitest + jsdom 테스트 환경을 처음부터 만드는 법 (재현 절차)
 
 이미 저장소에 다 되어 있다. **왜 이렇게 했는지 이해하고 싶거나, 새 프로젝트에서 똑같이 하고 싶을 때** 따라 한다.

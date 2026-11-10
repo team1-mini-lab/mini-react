@@ -10,6 +10,7 @@
 > - 본 문서는 `SDD_fixed_phase1.md`(v0.6)를 바탕으로 **통과·확정된 ADR (`ADR-0001~0006`, `ADR-0008`)**, 요구사항 명세 **`docs/requirements/issue.md` (및 SRS v1.3)**, 팀 설계 검토 일지 **`피드백 01~02`, `피드백 06` (`eutopiaa.tistory.com/97, 98, 102` 내용 전문 수록)**을 전수 통합하여 모순 없이 완성한 **Phase 1 최종 단일 설계 기준서**이다.
 > - *외부 티스토리 링크(`eutopiaa.tistory.com/98~102`)는 에이전트 환경에서 직접 웹 크롤링할 수 없으나, 해당 글의 원문·결정·테스트 목록이 저장소 `docs/reviews/feedback-01 ~ feedback-06.md` 및 `docs/adr/ADR-*.md`에 있으며, 반영 여부는 하네스 `check:docs`(10.2)로 확인한다.*
 > - Phase 2(Component, State, Hooks, Batching, Todo 앱) 최종 설계는 **`SDD_final_phase2.md`**에 있다.
+> - 공통 내용(쉬운 요약, 참고 표준, 검증 전략·관문, 측정 도구, 대표 시나리오, 차별화 제안, 역할 분담, 질문 카드, 이슈 매핑)은 **`SDD_final_common.md`**에 있다. 보관용 `SDD-3.md`에만 있던 내용을 지금 결정에 맞게 옮긴 문서다.
 
 ---
 
@@ -558,19 +559,19 @@ export class History<T> {
 | FR-01 | `domToVNode`(recordDom), `vnodeToDom`, `equalScreen`, 첫 로드 흐름 | 2.2, 3.1, 3.2, 7.3 | T10, P9, H1, H3, H4 | VT-01, VT-02, VT-33, VT-37, VT-38 |
 | FR-02 | `#editor`, `htmlToVNode`, 0.3초 미리보기, s2 정제 | 3.1, 3.3, 7.3 | S1, S2, S3, S4, TA7, TA8 | VT-02, VT-34, VT-40, VT-42 |
 | FR-03 | Patch 흐름, `diff` + `applyPatch` | 4장, 5.1, 7.3 | P9, TA1, TA9, TA10 | VT-03, VT-06, VT-39, VT-41 |
-| FR-04 | `pairs`로 노드 유지, `move`, `value`·`checked` 규칙 | 4.3, 5.1, 7.2 | P1, P2, P4, P5, H3 | VT-04, VT-06, VT-20, VT-36, VT-43 |
-| FR-05 | `text`·`attrs` 변경 | 4.2, 5.1 | D2, D3, P1 | VT-04, VT-27 |
-| FR-06 | `replace` 변경 | 4.2, 5.1 | D4, D5, P6 | VT-05 |
+| FR-04 | `diff` 짝짓기·`pairs`, `applyPatch`(`move`, `value`·`checked` 규칙) | 4.3, 5.1, 7.2 | P1, P2, P4, P5, H3 | VT-04, VT-06, VT-20, VT-36, VT-43 |
+| FR-05 | `diff`의 `text`·`attrs` 변경, `applyPatch` | 4.2, 5.1 | D2, D3, P1 | VT-04, VT-27 |
+| FR-06 | `diff`의 `replace`, `applyPatch`(`replaceWith`), `recordDom` | 4.2, 5.1 | D4, D5, P6 | VT-05 |
 | FR-07 | `History.push`, 0번 기록, k1 | 6장, 7.3 | H1, H2, H5, H6, H7 | VT-06, VT-07, VT-29, VT-45, VT-47 |
-| FR-08 | `undo`·`redo` + Diff·Patch + a3 + 미리보기, m3·n2 | 6장, 7.3 | H3, H4, H8, H9, H10, H11, H12 | VT-08, VT-09, VT-30, VT-45, VT-48, VT-49 |
-| FR-09 | 자식 짝짓기, 중복 key, `move` | 4.3 | D6, D7, D8, D9, D10, D11, P2 | VT-36 |
-| NFR-01 | `changes` 개수 = 조작 횟수, 부착 1회, `animate()` 하이라이트 | 3.2, 4.1, 5.3 | D6, P3, HL2 | VT-20, VT-29, VT-39 |
+| FR-08 | `undo`·`redo` + `diff`·`applyPatch` + `vnodeToHtml`·`renderPreview`, m3·n2 | 6장, 7.3 | H3, H4, H8, H9, H10, H11, H12 | VT-08, VT-09, VT-30, VT-45, VT-48, VT-49 |
+| FR-09 | `diff` 자식 짝짓기, 중복 key, `move` | 4.3 | D6, D7, D8, D9, D10, D11, P2 | VT-36 |
+| NFR-01 | `diff`의 `changes` 개수 = 조작 횟수, `vnodeToDom` 부착 1회, `applyPatch`의 `animate()` 하이라이트 | 3.2, 4.1, 5.3 | D6, P3, HL2 | VT-20, VT-29, VT-39 |
 | NFR-02 | 테스트 구조와 하네스 | 9.4, 10장 | — | VT-21, VT-35 |
-| NFR-03 | 주석·중첩·동시 변경·순서+교체·실패 복구 | 4.3, 5.1, 5.2, 8장 | D13, D14, D15, P4, P6, P10, P11, P12, R1, R2 | VT-21, VT-25, VT-26, VT-27, VT-28, VT-29, VT-30, VT-31, VT-43, VT-44, VT-45, VT-46 |
+| NFR-03 | `diff`·`applyPatch`·`recoverPatch` (주석·중첩·동시 변경·순서+교체·실패 복구) | 4.3, 5.1, 5.2, 8장 | D13, D14, D15, P4, P6, P10, P11, P12, R1, R2 | VT-21, VT-25, VT-26, VT-27, VT-28, VT-29, VT-30, VT-31, VT-43, VT-44, VT-45, VT-46 |
 | NFR-04 | 모듈 경계, Diff는 읽기·Patch는 쓰기 | 2.1, 10장 | D12 | VT-22 |
-| IR-01 | `#editor`, 0.3초 갱신 | 7.1, 7.3 | TA8, TA9 | VT-34, VT-40 |
+| IR-01 | `#editor`, 0.3초 갱신 (`htmlToVNode`, `renderPreview`) | 7.1, 7.3 | TA8, TA9 | VT-34, VT-40 |
 | IR-02 | `#patch`, Patch 흐름 | 7.1, 7.3 | TA9 | VT-32 |
-| IR-03 | `#undo`·`#redo`, 버튼 갱신 | 7.1, 7.3 | H8, H9 | VT-08, VT-09, VT-30 |
+| IR-03 | `#undo`·`#redo`, 버튼 갱신 (`canUndo`, `canRedo`) | 7.1, 7.3 | H8, H9 | VT-08, VT-09, VT-30 |
 | IR-04 | `domToVNode` | 3.1 | T1, T6, T7, T11, T15, S1, S2, S3 | VT-01, VT-02 |
 | IR-05 | `diff` → `{ changes, pairs }` | 4장 | D1, D2, D12 | VT-03, VT-04, VT-05 |
 | IR-06 | `applyPatch`·`recordDom`·`recoverPatch` | 5.1, 5.2 | P7, P8, R1, R2 | VT-06, VT-31, VT-45 |
@@ -581,7 +582,7 @@ export class History<T> {
 | CON-03 | 구현 범위 = 이 문서 + Phase 2 문서 | 1장 | — | — |
 | CON-04 | 브라우저 표준 DOM API만 사용 | 2.1, 3장, 5장 | — | VT-24 |
 | CON-05 | Vitest + jsdom | 10장 | ADR-0011 Confirmation | VT-35 |
-| CON-07 | 틀로 루트 찾기, 샘플 `id` 미사용 | 7.1 | TA10, TA11, TA12 | VT-41 |
+| CON-07 | 틀로 루트 찾기, 샘플 `id` 미사용 (`init`, `renderPreview`) | 7.1 | TA10, TA11, TA12 | VT-41 |
 | TBD-01 | 선형 기록 j1 | 6장 | H5 | VT-07 |
 | TBD-02 | 코드 입력칸 + 미리보기 | 7장 | TA1~TA12 | VT-39 |
 | TBD-03 | 변경 6종 | 4장 | D1~D15 | VT-03, VT-04, VT-05 |
@@ -684,6 +685,7 @@ export class History<T> {
 | `core/patch.ts` | `recordDom(v, node)` | `VNode`, `Node` | `void` | 새로 만든 실제 DOM 노드 참조를 재귀 기록 (`F1`) | `ADR-0005` |
 | `core/patch.ts` | `recoverPatch(c, next, err)` | 컨테이너, 새 트리, 오류 | `void` | 실패 시 컨테이너 통째 교체 + `recordDom` + 에러 기록 (`t3`) | `ADR-0005` |
 | `core/history.ts` | `History<T>` | 초기값 | 인스턴스 | 선형 기록 + 현재 위치 관리 (`push`, `undo`, `redo`, `canUndo`, `canRedo`) | `ADR-0008` |
+| `core/history.ts` | `push(state)` / `undo()` / `redo()` / `canUndo()` / `canRedo()` | 상태 / 없음 | 없음 / `T \| null` / `boolean` | 기록 추가(j1, 뒤쪽 삭제) / 한 칸 이동 / 버튼 켜기 판단 | `ADR-0008` |
 | `pages/phase1/format.ts` | `formatChange(change)` | `Change` | `string` | 변경 1건을 한 줄 요약 문자열로 변환 (`U1`) | 피드백 02 4절 (ADR-0006 8절 추가 예정) |
 | `pages/phase1/preview.ts` | `renderPreview(v)` | `VNode \| null` | `void` | `#preview` 영역 통째 렌더링 | `ADR-0006` |
 | `pages/phase1/tree-view.ts` | `renderTreeDiff(oldV, newV, res)` | 이전·새 VNode, `DiffResult` | `void` | 나란히 들여쓰기 트리 뷰어(`v2+w1`) 렌더링 | 피드백 02 4절 (ADR-0006 8절 추가 예정) |
