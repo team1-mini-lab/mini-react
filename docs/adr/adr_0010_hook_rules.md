@@ -7,7 +7,7 @@ consulted: []
 informed: [팀원 전체]
 ---
 
-# ADR-0007: Hook 상태 저장 방식과 호출 규칙 강제
+# ADR-0010: Hook 상태 저장 방식과 호출 규칙 강제
 
 ## Context and Problem Statement
 

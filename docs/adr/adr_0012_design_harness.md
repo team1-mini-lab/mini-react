@@ -7,7 +7,7 @@ consulted: []
 informed: [팀원 전체]
 ---
 
-# ADR-0009: 설계 준수 검증을 하네스로 자동화
+# ADR-0012: 설계 준수 검증을 하네스로 자동화
 
 ## Context and Problem Statement
 

@@ -7,7 +7,7 @@ consulted: []
 informed: [팀원 전체]
 ---
 
-# ADR-0006: State 변경 Batching
+# ADR-0009: State 변경 Batching
 
 ## Context and Problem Statement
 

@@ -7,7 +7,7 @@ consulted: []
 informed: [팀원 전체]
 ---
 
-# ADR-0008: 테스트 하네스 선정 (Vitest + jsdom)
+# ADR-0011: 테스트 하네스 선정 (Vitest + jsdom)
 
 ## Context and Problem Statement
 
@@ -15,7 +15,7 @@ SRS CON-05는 DOM API를 쓰는 모듈의 테스트를 DOM 테스트 환경에�
 
 ## Decision Drivers
 
-* TypeScript를 별도 설정 없이 실행할 수 있는가 (ADR-0001)
+* TypeScript를 별도 설정 없이 실행할 수 있는가 (ADR-0007)
 * DOMParser, MutationObserver 등 DOM API 지원 (CON-05)
 * 개발 서버·빌드 도구와 설정 공유
 * 실행 속도와 watch 모드

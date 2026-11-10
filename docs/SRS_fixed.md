@@ -8,12 +8,12 @@
 | 항목 | 내용 |
 |---|---|
 | 프로젝트명 | 미니 React 구현 프로젝트 |
-| 문서 버전 | 1.2 (ADR-0001~0006 반영 개정본) |
+| 문서 버전 | 1.3 (ADR-0008·0013·0014 및 SDD v0.5 정합성 반영) |
 | 작성일 | 2026-11-07 |
-| 개정일 | 2026-11-10 |
+| 개정일 | 2026-11-10 (1.2, 1.3) |
 | 작성자 | 프로젝트 팀원 전체 |
 | 검토자 | 프로젝트 팀원 전체 |
-| 문서 상태 | Review (1.1 Approved → 1.2 개정 검토 중, 미결 충돌 CF-03·CF-04 존재) |
+| 문서 상태 | Review (proposed ADR-0008~0014 승인 대기) |
 
 ## 개정 이력
 
@@ -21,8 +21,9 @@
 |---|---|---|---|
 | 1.1 | 2026-11-07 | 최종 완결본 | — |
 | 1.2 | 2026-11-10 | FR-01·02·03·04·05·06·07·08 요구사항/인수 기준 개정, FR-09 신설, NFR-01·03 측정 기준 구체화, IR-01·04·05·06 개정, IR-09·10 및 CON-07 신설, VT-01~06 개정, VT-36~46 신설, TBD-01~05 결정 근거 연결, TBD-07~10 신설, 6.2 ADR 충돌 사항(CF) 및 5.1.3·5.1.4 추적표 추가 | ADR-0001~0006 (`somage/works`), `리액트 issue.md`, ADR 목록(`docs/adr/README.md`) |
+| 1.3 | 2026-11-10 | FR-07에 변경 없는 Patch 예외(k1), FR-08에 수정 중 이동 금지(m3·n2) 추가, VT-47~49 신설, IR-04·06과 VT-31을 ADR-0013·0014에 연결, IR에 코드 이름 병기, TBD-01·06·07·08 상태 갱신, 5.1.3에 ADR-0013·0014 추가, 6.2에 CF-09·10 추가 | ADR-0008 개정(팀 설계 검토, 블로그 97), ADR-0013·0014(복구), SDD v0.5 정합성 검토 |
 
-> **ADR 번호 안내**: 두 브랜치의 ADR 번호가 겹쳐서 v1.2부터 `docs/adr/README.md`의 통합 번호를 쓴다. ADR-0001~0006은 `somage/works`의 설계 ADR(accepted), ADR-0007~0012는 `eungi/docs/adr`의 ADR을 다시 매긴 번호다. 대응은 5.1.3에 있다.
+> **ADR 번호 안내**: 두 브랜치의 ADR 번호가 겹쳐서 v1.2부터 `docs/adr/README.md`의 통합 번호를 쓴다. ADR-0001~0006은 `somage/works`의 설계 ADR(accepted), ADR-0007~0012는 `eungi/docs/adr`의 ADR을 다시 매긴 번호, ADR-0013·0014는 삭제한 eungi ADR에서 복구한 보완 ADR이다. 대응은 5.1.3에 있다.
 
 ---
 
@@ -128,7 +129,7 @@
 |---|---|
 | 개발 배경 | React의 핵심 동작 원리를 직접 구현하여 Virtual DOM 및 상태 기반 렌더링 메커니즘 체득 |
 | 기존 기술과의 관계 | React의 Virtual DOM, Component, State, Hooks 개체 개념을 표준 Vanilla Web API 기반으로 자작 |
-| 시스템 구성 | Virtual DOM Converter(`dom_to_vdom`), Virtual DOM Renderer(`vdom_to_dom`), Code Serializer/Parser, Diff Engine, Patch Engine, History Manager, Component Runtime, Hooks Engine |
+| 시스템 구성 | Virtual DOM Converter(`dom_to_vdom` = 코드 `domToVNode`), Virtual DOM Renderer(`vdom_to_dom` = `vnodeToDom`), Code Serializer/Parser(`vnodeToHtml`/`htmlToVNode`), Diff Engine, Patch Engine, History Manager, Component Runtime, Hooks Engine |
 | 모듈 간 관계 | Phase 1: 코드 입력칸 → `<template>` 파싱 → `dom_to_vdom` → Diff(이전, 새) → `{ changes, pairs }` → Patch로 실제 DOM 갱신 및 `dom` 이어받기<br>Phase 2: State 변경 → 새 Virtual DOM 생성 → Phase 1 Diff 알고리즘 → Patch 엔진을 통한 실제 DOM 갱신 |
 
 ## 2.2 Product Functions
@@ -171,8 +172,8 @@
 | FR-04 | 변경 부분만 갱신 | Patch 실행 시 변경된 부분만 갱신하고 변경되지 않은 노드는 유지해야 한다. | 변경되지 않은 화면 요소는 Patch 전후에 같은 요소 객체이며, 그 요소의 입력 중인 글자, 커서 위치, 스크롤 위치가 유지된다. | 단위, 기능 | Phase 1 | PR-02, PR-06 |
 | FR-05 | 텍스트 및 속성 변경 | 글자나 속성만 달라진 요소를 새로 만들지 않고 해당 내용만 변경해야 한다(ADR-0004 "글자 수정", "속성 수정"). | Patch 전후 해당 DOM 요소의 참조 객체가 동일함 | 단위 | Phase 1 | PR-02, PR-06 |
 | FR-06 | 태그 종류 변경 | 태그 종류(`tag`) 또는 노드 종류(`type`)가 달라진 요소는 새 요소로 교체해야 한다(ADR-0004 "교체"). | Patch 후 해당 위치의 DOM 노드가 새 종류로 교체되며, 교체된 노드의 자식은 따로 비교하지 않는다. | 단위 | Phase 1 | PR-02, PR-06 |
-| FR-07 | History 저장 | Patch 실행 시마다 그 시점의 Virtual DOM을 State History에 저장해야 한다. | Patch를 n번 실행하면 기록이 n개 늘어난다. 분기 후 Patch 시 이후 기록 처리는 TBD-01 정책을 따른다. | 단위 | Phase 1 | PR-06 |
-| FR-08 | Undo/Redo | 뒤로가기(Undo)/앞으로가기(Redo) 버튼 클릭 시 이전/다음 기록으로 이동하고, 실제 영역과 테스트 영역(코드 입력칸·미리보기)이 FR-01 비교 기준으로 같은 모습이 되어야 한다. 실제 영역은 지금 그려진 트리를 "이전"으로 하는 Diff → Patch로 갱신하고(ADR-0004 `dom` 규칙 7), 코드 입력칸은 기록의 Virtual DOM을 코드로 바꿔 다시 채운다(ADR-0006 a3). | 이동 후 두 영역이 FR-01 비교 기준으로 해당 기록과 일치하며, 처음·끝 기록에서 더 이동하려 하면 아무 일도 일어나지 않는다. | 기능, 단위 | Phase 1 | PR-07 |
+| FR-07 | History 저장 | Patch 실행 시마다 그 시점의 Virtual DOM을 State History에 저장해야 한다. | 변경이 있는 Patch를 n번 실행하면 기록이 n개 늘어난다(첫 로드 상태가 0번 기록). 변경이 없는 Patch(changes 0개)는 기록하지 않고 "변경 사항 없음"을 표시한다(ADR-0008 k1). 분기 후 Patch 시 이후 기록 처리는 TBD-01 정책을 따른다. | 단위 | Phase 1 | PR-06 |
+| FR-08 | Undo/Redo | 뒤로가기(Undo)/앞으로가기(Redo) 버튼 클릭 시 이전/다음 기록으로 이동하고, 실제 영역과 테스트 영역(코드 입력칸·미리보기)이 FR-01 비교 기준으로 같은 모습이 되어야 한다. 실제 영역은 지금 그려진 트리를 "이전"으로 하는 Diff → Patch로 갱신하고(ADR-0004 `dom` 규칙 7), 코드 입력칸은 기록의 Virtual DOM을 코드로 바꿔 다시 채우고 미리보기도 다시 그린다(ADR-0006 a3·g1). 코드 입력칸에 Patch하지 않은 수정이 있으면 두 버튼을 끄고 이유를 안내하며, 입력 직후 판단 전(0.3초)에도 끈다(ADR-0008 m3·n2). | 이동 후 두 영역이 FR-01 비교 기준으로 해당 기록과 일치하며, 처음·끝 기록에서 더 이동하려 하면 아무 일도 일어나지 않는다. 수정 여부는 `diff(지금 트리, 코드의 새 트리)`의 changes가 0개인지로 판단한다(들여쓰기만 바꾸면 수정 없음, `key`만 바꾸면 수정 있음). | 기능, 단위 | Phase 1 | PR-07 |
 | FR-09 | 목록 항목 key 짝짓기 | 자식 목록을 비교할 때 `key`가 있는 자식은 key로, key가 없는 자식끼리는 그들 사이의 순서로 짝짓고, 자리가 바뀐 항목은 새로 만들지 않고 이동해야 한다(ADR-0004 결정 3-나). | 목록 맨 앞에 항목을 추가하면 변경 목록은 `add` 1개뿐이고 기존 항목의 입력값이 같은 항목에 남는다. 순서를 바꾸면 `move`로 처리되어 요소 객체가 유지된다. 같은 부모 안의 중복 key는 경고 후 그 부모의 자식 전체를 자리 비교로 처리한다. | 단위, 기능 | Phase 1 | PR-02, PR-06 |
 
 ### 3.1.3 Phase 2 Functional Requirements
@@ -212,13 +213,13 @@
 | IR-01 | 테스트 영역 UI | 사용자는 코드 입력칸(원본)에서 테스트용 HTML을 수정 및 입력하고, 입력이 0.3초 멈추면 미리보기가 다시 그려진다. Patch 클릭 시 대기 중이어도 미리보기를 즉시 다시 그린다(ADR-0006). | HTML Text / 입력 이벤트 | 입력된 HTML 텍스트, 갱신된 미리보기 |
 | IR-02 | Patch 버튼 UI | 사용자는 Patch 실행 조작을 수행한다. | 버튼 Click | Patch 알고리즘 수행 |
 | IR-03 | Undo/Redo 버튼 UI | 사용자는 변경 이력을 이전/이후로 이동시킨다 (뒤로가기/앞으로가기). | 버튼 Click | 이력 상태 복원/적용 |
-| IR-04 | DOM Converter (`dom_to_vdom`) | 실제 DOM 노드를 읽어 Virtual DOM 객체를 생성한다. 공백 정리(`/[ \t\n\r\f]+/g` → `" "`, `<pre>` 예외), 주석 제외, `localName` 소문자 태그, `key` 속성의 `attrs` 분리를 적용하고, 실제 영역 첫 변환 시에만 `dom`을 기록한다(ADR-0002). ⚠️ CF-04 | DOM Node, 기록 여부(기본: 기록 안 함) | Virtual DOM 객체 |
-| IR-05 | Diff Engine | 이전/신규 Virtual DOM을 비교하여 변경 사항을 생성한다. `dom`은 읽지 않으며 변경 기록의 대상은 이전 트리의 Virtual DOM 객체를 가리킨다(ADR-0004, ADR-0005). | Old/New Virtual DOM | `{ changes, pairs }` (`kind`: `add`, `remove`, `replace`, `text`, `attrs`, `move`) |
-| IR-06 | Patch Engine | Diff 결과를 실제 DOM에 반영한다. 부모마다 삭제 → 새 자식을 앞에서부터 [자리 맞추기 → 자신의 변경 → 자식] 순서로 적용하고, 마지막에 짝 목록대로 `dom`을 복사하며 추가·교체로 만든 노드의 `dom`을 기록한다(ADR-0005). ⚠️ CF-03 | `{ changes, pairs }` (대상 실제 노드는 각 객체의 `dom`으로 찾음) | Updated DOM, `dom`이 채워진 새 Virtual DOM |
+| IR-04 | DOM Converter (`dom_to_vdom`, 코드 `domToVNode`) | 실제 DOM 노드를 읽어 Virtual DOM 객체를 생성한다. 공백 정리(`/[ \t\n\r\f]+/g` → `" "`, `<pre>` 예외), 주석 제외, `localName` 소문자 태그, `key` 속성의 `attrs` 분리를 적용하고, 실제 영역 첫 변환 시에만 `dom`을 기록한다(ADR-0002). `<script>` 요소, `on*` 속성, `javascript:` 주소는 넣지 않는다(ADR-0014, proposed). | DOM Node, 기록 여부(기본: 기록 안 함) | Virtual DOM 객체 |
+| IR-05 | Diff Engine (`diff`) | 이전/신규 Virtual DOM을 비교하여 변경 사항을 생성한다. `dom`은 읽지 않으며 변경 기록의 대상은 이전 트리의 Virtual DOM 객체를 가리킨다(ADR-0004, ADR-0005). | Old/New Virtual DOM | `{ changes, pairs }` (`kind`: `add`, `remove`, `replace`, `text`, `attrs`, `move`) |
+| IR-06 | Patch Engine (`applyPatch`) | Diff 결과를 실제 DOM에 반영한다. 적용 전에 모든 대상의 `dom`을 확인하고 하나라도 없으면 DOM을 바꾸지 않고 `PatchError`를 던진다(ADR-0013, proposed). 부모마다 삭제 → 새 자식을 앞에서부터 [자리 맞추기 → 자신의 변경 → 자식] 순서로 적용하고, 마지막에 짝 목록대로 `dom`을 복사하며 추가·교체로 만든 노드의 `dom`을 기록한다(ADR-0005). | `{ changes, pairs }` (대상 실제 노드는 각 객체의 `dom`으로 찾음) | Updated DOM, `dom`이 채워진 새 Virtual DOM |
 | IR-07 | Phase 2 UI | 사용자 입력을 통한 State 변경 테스트 환경을 제공한다. | User Interaction | Changed State & UI |
 | IR-08 | State Interface | 컴포넌트 내에서 setter 함수를 통한 State 변경을 요청한다. | New State Value | Re-render Trigger |
-| IR-09 | Virtual DOM Renderer (`vdom_to_dom`) | Virtual DOM 노드를 화면 밖에서 재귀로 실제 DOM 트리로 완성해 반환한다. 화면 부착은 호출 측이 한 번만 한다. `key`는 `key` 속성으로 다시 붙이고, `dom`은 읽지도 기록하지도 않는다(ADR-0003). | Virtual DOM 노드 | 실제 DOM 노드 (화면 미부착) |
-| IR-10 | Code Serializer / Parser | Virtual DOM → 코드: 원래 공백 노드 자리만 줄바꿈·2칸 들여쓰기(`<pre>` 제외), `<`·`&`·`"` 이스케이프, `key` 속성 기록, 빈 요소는 닫는 태그 생략. 코드 → Virtual DOM: `<template>`에서 파싱한 첫 요소를 `dom_to_vdom`(기본 모드)으로 변환(ADR-0006 a3, g1). | Virtual DOM / HTML Text | HTML Text / Virtual DOM |
+| IR-09 | Virtual DOM Renderer (`vdom_to_dom`, 코드 `vnodeToDom`) | Virtual DOM 노드를 화면 밖에서 재귀로 실제 DOM 트리로 완성해 반환한다. 화면 부착은 호출 측이 한 번만 한다. `key`는 `key` 속성으로 다시 붙이고, `dom`은 읽지도 기록하지도 않는다(ADR-0003). | Virtual DOM 노드 | 실제 DOM 노드 (화면 미부착) |
+| IR-10 | Code Serializer / Parser (`vnodeToHtml`, `htmlToVNode`) | Virtual DOM → 코드: 원래 공백 노드 자리만 줄바꿈·2칸 들여쓰기(`<pre>` 제외), `<`·`&`·`"` 이스케이프, `key` 속성 기록, 빈 요소는 닫는 태그 생략. 코드 → Virtual DOM: `<template>`에서 파싱한 첫 요소를 `dom_to_vdom`(기본 모드)으로 변환(ADR-0006 a3, g1). | Virtual DOM / HTML Text | HTML Text / Virtual DOM |
 
 ## 3.4 Constraints
 
@@ -259,6 +260,9 @@
 | VT-40 | FR-02, IR-01 | Functional Test | 입력 직후 0.3초 전/후, 대기 중 Patch | 미리보기 갱신 시점 | 0.3초 전에는 그대로, 후에는 갱신, 대기 중 Patch 시 즉시 갱신 (ADR-0006 TA8, TA9) |
 | VT-41 | FR-03, CON-07 | Functional Test, Code Review | 루트 `div` → `section` 교체 후 재 Patch | 틀 기반 탐색 | 두 번 모두 성공, 샘플 `id`로 찾는 코드 없음, 미리보기 노드가 어떤 `dom`에도 없음 (ADR-0006 TA10~TA12) |
 | VT-42 | FR-02 | Functional Test | 잘못된 HTML(`<p>안녕<div>세상</div></p>`) 입력 후 Patch | 브라우저 보정 결과 사용 | 미리보기와 실제 영역이 FR-01 비교 기준으로 같음 (ADR-0006 TA7) |
+| VT-47 | FR-07 | Integration Test | 고치지 않고(또는 들여쓰기만 바꾸고) Patch, [A, B, C]에서 B로 돌아와 고치지 않고 Patch | 변경 없는 Patch 미기록 | 기록 수 그대로, "변경 사항 없음" 표시, C가 남아 앞으로가기 가능 (ADR-0008 k1) |
+| VT-48 | FR-08 | Integration Test | 코드 입력 직후, 0.3초 후(글자 수정 / 들여쓰기만 수정 / `key`만 수정) | 수정 중 이동 금지 | 입력 즉시 두 버튼 꺼짐, 0.3초 후 들여쓰기만이면 다시 켜지고 글자·`key` 수정이면 꺼진 채 안내 표시 (ADR-0008 m3·n2) |
+| VT-49 | FR-08 | Integration Test | Patch 2회 후 뒤로가기 | 미리보기 갱신 | 미리보기와 코드 입력칸이 이동한 기록과 FR-01 비교 기준으로 같음 (ADR-0008 3절) |
 
 ## 4.2 Phase 2 검증 항목
 
@@ -290,7 +294,7 @@
 | VT-28 | NFR-03 | Unit Test | 동일 VDOM 비교 | Diff 산출 | Empty Patches 반환 |
 | VT-29 | NFR-03 | Unit Test | 동일 값 입력을 통한 Patch | DOM 조작 미발생 | 실제 DOM 조작 횟수 0회 |
 | VT-30 | NFR-03 | Functional Test | Empty History 상태 Undo/Redo | 이동 불가 처리 | 무동작 및 이전/이후 이력 유지 |
-| VT-31 | NFR-03 | Unit Test | 존재하지 않는 노드 수정 요청 | 예외 방어 | 안전한 예외 바이패스 처리 ⚠️ CF-03: 처리 방식(원자적 실패 여부)은 TBD-07에서 확정 |
+| VT-31 | NFR-03 | Unit Test | 존재하지 않는 노드 수정 요청 | 예외 방어 | `PatchError`를 던지고 실제 DOM 변경 0건 (ADR-0013) |
 | VT-35 | CON-05 | Test Env Check | JSDOM 기반 테스트 환경 수행 | DOM API 테스트 | 자동화 단위 테스트 스위트 정상 통과 |
 | VT-43 | NFR-03 | Unit Test | 실제 영역에 주석이 있을 때 둘째 항목 글자 변경, `[A,B,C,D]` → `[A]` | `dom` 참조로 대상 탐색 | 둘째 항목만 바뀜, B·C·D 삭제 후 A는 같은 요소 객체 (ADR-0005 P4, P5) |
 | VT-44 | NFR-03 | Unit Test | `[A(p), B]` → `[B, A(h1)]` | 적용 순서 | `insertBefore` 오류 없이 `[B, A(h1)]` (ADR-0005 P6) |
@@ -312,8 +316,8 @@
 | PR-03 | IR-01, IR-02, IR-03, CON-07 | VT-32, VT-40, VT-41 | Phase 1 검증 페이지 |
 | PR-04 | FR-01, FR-02, IR-09 | VT-01, VT-02, VT-33, VT-37, VT-38 | 초기 렌더링 동기화 |
 | PR-05 | IR-01, IR-10, CON-07 | VT-34, VT-39, VT-40, VT-42 | 테스트 영역 편집 (코드 입력칸 + 미리보기) |
-| PR-06 | FR-06, FR-07, FR-08, FR-09, IR-06, IR-09 | VT-06, VT-07, VT-36, VT-45 | Patch Engine & History 저장 |
-| PR-07 | FR-08, IR-03 | VT-08, VT-09 | History 이동 (Undo/Redo) |
+| PR-06 | FR-06, FR-07, FR-08, FR-09, IR-06, IR-09 | VT-06, VT-07, VT-36, VT-45, VT-47 | Patch Engine & History 저장 |
+| PR-07 | FR-08, IR-03 | VT-08, VT-09, VT-48, VT-49 | History 이동 (Undo/Redo) |
 | PR-08 | FR-11, FR-12 | VT-10 | Function Component |
 | PR-09 | FR-21 | VT-16 | Hook 호출 규칙 제어 |
 | PR-10 | FR-13, FR-15 | VT-11 | Props & State 관리 |
@@ -325,7 +329,7 @@
 | PR-16 | FR-23, IR-07 | VT-18 | Phase 2 검증 페이지 |
 | PR-17 | CON-01, CON-02 | VT-23 | 순수 기술 스택 준수 |
 | PR-18 | NFR-02, NFR-04, CON-05 | VT-01~05, VT-10~16, VT-21~22, VT-35~38 | 모듈 설계 및 단위 테스트 |
-| PR-19 | NFR-02 | VT-06~09, VT-13, VT-17~19, VT-24, VT-32~34, VT-39~42 | 통합 및 기능 테스트 |
+| PR-19 | NFR-02 | VT-06~09, VT-13, VT-17~19, VT-24, VT-32~34, VT-39~42, VT-47~49 | 통합 및 기능 테스트 |
 | PR-20 | NFR-03 | VT-25~VT-31, VT-43~VT-46 | 엣지 케이스 처리 |
 | PR-21 | TBD-05 | VT-19 | Batching 검증 선택 구현 |
 
@@ -335,9 +339,9 @@
 |---|---|---|---|
 | R17 | CON-01, CON-02 | VT-23 | Vanilla JS/TS 기반 외부 프레임워크 사용 금지 |
 | R18 | NFR-02, NFR-04 | VT-01~05, VT-10~16, VT-21, VT-22, VT-36~38 | 모듈별 단위 테스트 |
-| R19 | NFR-02 | VT-06~09, VT-13, VT-17~19, VT-24, VT-32~34, VT-39~42 | 통합 및 기능 테스트 |
+| R19 | NFR-02 | VT-06~09, VT-13, VT-17~19, VT-24, VT-32~34, VT-39~42, VT-47~49 | 통합 및 기능 테스트 |
 | R20 | NFR-03 | VT-25~VT-31, VT-43~VT-46 | 엣지 케이스 대응 |
-| R01 ~ R16 | FR-01 ~ FR-23 | VT-01 ~ VT-18, VT-36 ~ VT-42 | Phase 1 & 2 상세 기능 세부 할당 |
+| R01 ~ R16 | FR-01 ~ FR-23 | VT-01 ~ VT-18, VT-36 ~ VT-42, VT-47 ~ VT-49 | Phase 1 & 2 상세 기능 세부 할당 |
 
 ### 5.1.3 ADR vs SRS & VT
 
@@ -350,20 +354,22 @@
 | ADR-0005 | `somage/works` ADR 0005 | Patch 적용 순서, `{ changes, pairs }` | accepted | IR-05, IR-06, NFR-01, NFR-03 | VT-03~VT-06, VT-43~VT-46 |
 | ADR-0006 | `somage/works` ADR 0006 | 테스트 영역 = 코드 입력칸 + 미리보기 | accepted | FR-01~FR-03, FR-08, IR-01, IR-10, CON-07, TBD-02 | VT-39~VT-42 |
 | ADR-0007 | `eungi` adr_001 + `somage/works` ADR_0001 (중복 병합) | 프로그래밍 언어 (TypeScript) | accepted | CON-02 | VT-23 |
-| ADR-0008 | `eungi` adr_002 | History 분기 시 이후 기록 삭제 (선형) | proposed | FR-07, FR-08, TBD-01 | VT-07~VT-09, VT-30 |
+| ADR-0008 | `eungi` adr_002 + 팀 설계 검토(블로그 97) | History 정책: 선형, 변경 없으면 기록 안 함, 수정 중 이동 금지 | proposed | FR-07, FR-08, TBD-01 | VT-07~VT-09, VT-30, VT-47~VT-49 |
 | ADR-0009 | `eungi` adr_006 | State 변경 Batching (microtask) | proposed | TBD-05 | VT-19 |
 | ADR-0010 | `eungi` adr_007 | Hook 상태 저장 방식과 호출 규칙 강제 | proposed | FR-15, FR-21 | VT-16 |
 | ADR-0011 | `eungi` adr_008 | 테스트 하네스 (Vitest + jsdom) | proposed | CON-05 | VT-35 |
 | ADR-0012 | `eungi` adr_009 | 설계 준수 검증 하네스 자동화 | proposed | NFR-02, NFR-04 | VT-22, VT-23 |
-| (superseded) | `eungi` adr_003 | 테스트 영역 수정 방식 | superseded by ADR-0006 | — (CF-04, CF-05 잔여) | — |
-| (superseded) | `eungi` adr_004 | Diff 비교 전략 (위치 + 5종) | superseded by ADR-0004 | — (CF-01) | — |
-| (superseded) | `eungi` adr_005 | Patch 경로 해석 후 일괄 적용 | superseded by ADR-0005 | — (CF-02, CF-03 잔여) | — |
+| ADR-0013 | `eungi` adr_005에서 복구 | Patch 적용 전 검증 (원자적 실패), ADR-0005 보완 | proposed | IR-06, NFR-03, TBD-07 | VT-31 |
+| ADR-0014 | `eungi` adr_003에서 복구 | 입력 정제 (`<script>`, `on*`, `javascript:`), ADR-0002·0006 보완 | proposed | IR-04, TBD-08 | VT-21, VT-02 |
+| (superseded) | `eungi` adr_003 | 테스트 영역 수정 방식 | superseded by ADR-0006 (삭제) | 입력 정제는 ADR-0014로 복구 | — |
+| (superseded) | `eungi` adr_004 | Diff 비교 전략 (위치 + 5종) | superseded by ADR-0004 (삭제) | — | — |
+| (superseded) | `eungi` adr_005 | Patch 경로 해석 후 일괄 적용 | superseded by ADR-0005 (삭제) | 원자성은 ADR-0013으로 복구 | — |
 
 ### 5.1.4 요구사항 정리(`리액트 issue.md`) ID vs SRS ID
 
 | issue.md ID | SRS ID | 비고 |
 |---|---|---|
-| FR-01 ~ FR-08 | FR-01 ~ FR-08 | 1.2에서 문구 일치 |
+| FR-01 ~ FR-08 | FR-01 ~ FR-08 | 1.2에서 문구 일치. 1.3의 FR-07 k1 예외·FR-08 m3는 issue.md에도 추가 필요 |
 | FR-10 (선언적 화면) | FR-10 | 일치 |
 | FR-11 (표시 장소 자동 갱신) | FR-14 | 번호 다름 |
 | FR-12 (표시 장소 추가 시 상태 코드 무수정) | — | ⚠️ SRS 미반영 (TBD-10) |
@@ -390,14 +396,14 @@
 
 | ID | 질문 및 이슈 내용 | 결정이 필요한 이유 | 결정 상태 / 방향 |
 |---|---|---|---|
-| TBD-01 | History 분기 처리: A→B→C 쌓인 상태에서 Undo 2회로 A 이동 후 새 Patch D 발생 시, 기존 B, C 처리 | 이력 구조 (Linear Stack vs Tree) 결정 필요 | **Stack 최신 이력 덮어쓰기**(선형 이력, 분기 시 B·C 삭제)로 확정. 근거 ADR-0008(proposed) → accepted 전환 필요 |
+| TBD-01 | History 분기 처리: A→B→C 쌓인 상태에서 Undo 2회로 A 이동 후 새 Patch D 발생 시, 기존 B, C 처리 | 이력 구조 (Linear Stack vs Tree) 결정 필요 | **선형 이력, 분기 시 B·C 삭제**(j1)로 확정. 같은 ADR에서 변경 없는 Patch 미기록(k1), 수정 중 이동 금지(m3·n2)도 결정. 근거 ADR-0008(proposed, 팀 설계 검토 반영) → accepted 전환 필요. 잘린 기록 보관(`archive[]`)은 확장 후보(SDD 부록 C) |
 | TBD-02 | 테스트 영역 수정 방식: HTML 코드 에디터 입력 vs 브라우저 화면 직접 편집 | DOM Converter 호출 방식 차이 발생 | **방법 3: 코드 입력칸(원본) + Virtual DOM을 거쳐 그린 미리보기**로 확정 (ADR-0006) |
 | TBD-03 | Diff 탐지 변경 유형 정의 | Patch 결과 구조 및 노드 변형 범위 결정 | **6가지 유형**(추가, 삭제, 교체, 글자 수정, 속성 수정, 이동) 확정 (ADR-0004). 구 eungi adr_004(5종)와의 충돌은 CF-01 |
 | TBD-04 | 목록 재정렬 대응을 위한 `key` 속성 지원 여부 | 동일 위치 노드 짝짓기 시 입력 상태 남는 문제 방지 | **`key` 속성 지원** 및 key 기반 reconciliation 적용 확정 (ADR-0004, FR-09). 알려진 한계: 이동 횟수 최소화 안 함, key 없는 노드(글자·공백)의 밀림, key 변경 시 삭제 + 추가 |
 | TBD-05 | 단일 이벤트 핸들러 내 다중 State 변경 시 Batching 적용 여부 | 불필요한 연쇄 재렌더링 방지 (선택 구현) | microtask Batching 제안됨 (ADR-0009, proposed). 구현 여부 최종 결정 대기 |
-| TBD-06 | 포트폴리오 완성도 평가 기준 | 객관적 완료 조건 산정 필요 | 단위 테스트 커버리지 90% 이상 및 VT-01~46 통과로 확정 |
-| TBD-07 | Patch 대상(`dom`)이 없을 때의 실패 처리 (CF-03) | 구 eungi adr_005는 "DOM 변경 0건 후 `PatchError`"(원자적 실패)를 정했으나, ADR-0005에는 실패 처리가 없음. VT-31 합격 기준이 이에 달림 | 미결. 권고안: ADR-0005에 "적용 전 검증 단계(모든 `target`·`parent`·`before`의 `dom` 존재 확인)"를 추가해 원자성 유지 |
-| TBD-08 | 입력 HTML의 `<script>`와 `on*` 속성 처리 (CF-04) | 구 eungi adr_003은 변환 시 제거를 정했으나, ADR-0002는 `key` 외 모든 속성을 유지하고 ADR-0006 c1은 브라우저 해석 결과를 그대로 씀. `vdom_to_dom`이 `setAttribute("onclick", …)`를 하면 핸들러가 실제로 동작함 | 미결. 권고안: ADR-0002에 정제 규칙 추가 (`script` 요소 건너뛰기, `on*` 속성 제외) |
+| TBD-06 | 포트폴리오 완성도 평가 기준 | 객관적 완료 조건 산정 필요 | 단위 테스트 커버리지 90% 이상 및 VT-01~49 통과로 확정 |
+| TBD-07 | Patch 대상(`dom`)이 없을 때의 실패 처리 (CF-03) | 구 eungi adr_005는 "DOM 변경 0건 후 `PatchError`"(원자적 실패)를 정했으나, ADR-0005에는 실패 처리가 없음. VT-31 합격 기준이 이에 달림 | **적용 전 전체 확인, 실패 시 DOM 변경 0건**으로 제안 (ADR-0013, proposed) |
+| TBD-08 | 입력 HTML의 `<script>`와 `on*` 속성 처리 (CF-04) | 구 eungi adr_003은 변환 시 제거를 정했으나, ADR-0002는 `key` 외 모든 속성을 유지하고 ADR-0006 c1은 브라우저 해석 결과를 그대로 씀. `vdom_to_dom`이 `setAttribute("onclick", …)`를 하면 핸들러가 실제로 동작함 | **변환 단계에서 `<script>`·`on*`·`javascript:` 제외**로 제안 (ADR-0014, proposed) |
 | TBD-09 | 재귀 깊이 기준 | ADR-0002 T9, ADR-0003, ADR-0005 D14·P11(100겹, 임시 값)이 같은 기준을 공유함 | 미결 (회의 후 결정) |
 | TBD-10 | issue.md와 SRS의 ID 체계 정렬 | Phase 2 FR 번호, NFR-04 의미, C-xx ↔ CON-xx가 서로 달라 ADR이 인용하는 ID가 문서마다 다른 요구를 가리킴. issue.md FR-12는 SRS에 대응 항목이 없음 | 미결. 5.1.4 대응표를 기준으로 두 문서 중 하나로 통일 필요 |
 
@@ -409,12 +415,14 @@
 |---|---|---|---|---|---|---|
 | CF-01 | 자식 짝짓기와 변경 종류 | adr_004: 위치 비교 + 5종, key는 확장 과제 (proposed) | ADR-0004: key 짝짓기 + 6종 (accepted) | 높음 | 해소: ADR-0004 채택 (SRS 1.1 TBD-03·04와도 일치) | FR-09, TBD-03, TBD-04 |
 | CF-02 | Patch 대상 지정 방식 | adr_005: `path: number[]` 경로를 해석한 뒤 일괄 적용. "노드 참조 저장"은 Diff가 DOM에 의존한다는 이유로 기각 | ADR-0004·0005: 변경 기록이 이전 Virtual DOM 객체를 가리키고 Patch가 `dom`으로 실제 노드를 찾음. Diff는 `dom`을 읽지 않아 기각 사유를 해소 | 높음 | 해소: ADR-0004·0005 채택 | IR-05, IR-06 |
-| CF-03 | Patch 실패 시 원자성 | adr_005: 대상이 하나라도 없으면 DOM 변경 0건 후 `PatchError` | 정의 없음 | 중간 | 미결 → TBD-07 | IR-06, VT-31 |
-| CF-04 | 입력 정제 (보안) | adr_003: `on*` 속성과 `<script>` 제거 | ADR-0002·0006: 모든 속성 유지, 브라우저 해석 결과 그대로 사용 | 중간 | 미결 → TBD-08 | IR-04 |
+| CF-03 | Patch 실패 시 원자성 | adr_005: 대상이 하나라도 없으면 DOM 변경 0건 후 `PatchError` | 정의 없음 | 중간 | 해소 제안: ADR-0013 (eungi 아이디어로 somage 설계 보완) | IR-06, VT-31 |
+| CF-04 | 입력 정제 (보안) | adr_003: `on*` 속성과 `<script>` 제거 | ADR-0002·0006: 모든 속성 유지, 브라우저 해석 결과 그대로 사용 | 중간 | 해소 제안: ADR-0014 (eungi 아이디어로 somage 설계 보완) | IR-04 |
 | CF-05 | 파서와 미리보기 갱신 시점 | adr_003: `DOMParser`, 실시간 미리보기 | ADR-0006: `<template>`, 0.3초 debounce | 낮음 | 해소: ADR-0006 채택 (둘 다 스크립트 미실행, 실시간을 debounce로 구체화) | IR-01, IR-10 |
 | CF-06 | ADR 번호 중복 | ADR-001~009 | ADR 0001~0006 + 언어 ADR_0001 | 낮음 | 해소: 통합 번호 부여 (5.1.3) | 전체 |
-| CF-07 | 함수 이름·표기 | `htmlToVNode`, `vnodeToHTML`, `applyPatches` (camelCase, TS) | `dom_to_vdom`, `vdom_to_dom` (snake_case, Python dict 표기) | 낮음 | 미결 (코드 컨벤션에서 결정, SRS는 ADR 이름 사용) | IR-04, IR-09, IR-10 |
+| CF-07 | 함수 이름·표기 | `htmlToVNode`, `vnodeToHTML`, `applyPatches` (camelCase, TS) | `dom_to_vdom`, `vdom_to_dom` (snake_case, Python dict 표기) | 낮음 | 해소: 코드는 camelCase, ADR 이름 병기 (SDD 1.6 이름 대응표) | IR-04, IR-09, IR-10 |
 | CF-08 | 용어·ID 체계 | SRS: Undo/Redo, CON-xx | issue.md: 뒤로가기/앞으로가기, C-xx, 다른 Phase 2 번호 | 낮음 | 일부 해소 (5.1.4 대응표), 나머지 TBD-10 | 5.1.4 |
+| CF-09 | 루트 교체 | v0.3 SDD: 루트 REPLACE는 `PatchError` | ADR-0006 h1: 루트도 교체 가능, 틀로 찾기 | 중간 | 해소: ADR-0006 채택 (FR-02 태그 자유 수정) | CON-07, VT-41 |
+| CF-10 | `value`·`checked` 반영 | v0.3 SDD: 프로퍼티로 쓰고 같으면 생략 | ADR-0005: `setAttribute`만 | 낮음 | 해소: 속성과 프로퍼티를 함께 쓰되 프로퍼티는 다를 때만 (SDD 3.4) | FR-04 |
 
 ---
 
@@ -430,6 +438,7 @@
 - [x] TBD 항목들에 대한 영향도 및 확정 방향이 반영되었는가?
 - [x] (1.2) ADR-0001~0006의 요구사항 변경안이 FR/NFR/TBD에 반영되었는가?
 - [x] (1.2) ADR과 SRS 항목 간 추적표(5.1.3)가 작성되었는가?
-- [ ] (1.2) 미결 충돌 CF-03, CF-04가 결정되었는가? (TBD-07, TBD-08)
-- [ ] (1.2) proposed 상태인 ADR-0008~0012가 accepted로 전환되었는가?
+- [x] (1.2) 미결 충돌 CF-03, CF-04에 결정안이 있는가? (1.3: ADR-0013, ADR-0014 제안)
+- [x] (1.3) SDD v0.5(`SDD.md`, `SDD_fixed_phase2.md`)와 ID·결정·용어 정합성을 검토했는가?
+- [ ] (1.2) proposed 상태인 ADR-0008~0014가 accepted로 전환되었는가?
 - [ ] (1.2) issue.md와 SRS의 ID 체계가 통일되었는가? (TBD-10)
