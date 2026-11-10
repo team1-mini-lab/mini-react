@@ -1,27 +1,27 @@
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-import {defineConfig} from 'vite';
+// Vite + Vitest 설정 (ADR-0011). UI 프레임워크 플러그인 없음 (CON-01).
+import { resolve } from 'node:path';
+import { defineConfig } from 'vitest/config';
 
-export default defineConfig(() => {
-  return {
-    plugins: [react(), tailwindcss()],
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
+const root = import.meta.dirname;
+
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(root, 'index.html'),
+        phase1: resolve(root, 'src/pages/phase1/index.html'),
+        phase2: resolve(root, 'src/pages/phase2/index.html'),
       },
     },
-    server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/core/**', 'src/component/**'],
+      thresholds: { statements: 90 },
     },
-    test: {
-      environment: 'jsdom',
-      globals: true,
-      include: ['tests/**/*.test.ts'],
-    },
-  };
+  },
 });

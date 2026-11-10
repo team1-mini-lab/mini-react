@@ -1,125 +1,61 @@
-/**
- * Virtual DOM 노드 정의 및 보조 함수 (ADR-0001, ADR-0004)
- */
+// Virtual DOM 자료구조 (SDD_final_phase1 2.2, ADR-0001)
+// 키의 네 무리: 화면 데이터(type·tag·attrs·text·children) / 짝짓기(key) / 참조(dom) / 동작(events)
 
 export type Attrs = Record<string, string>;
+export type EventHandlers = Record<string, EventListener>;
 
 export interface VElement {
   type: 'element';
-  tag: string;                          // 항상 소문자 (localName 기준, T11)
-  attrs: Attrs;                         // 속성 해시. 없으면 {}. key는 절대 넣지 않는다 (VT-26)
-  children: VNode[];                    // 자식 목록. 없으면 [] (VT-25)
-  key?: string;                         // 짝짓기용 식별자. 속성에 없으면 키 자체가 없다 (ADR-0001)
-  dom?: Element;                        // 실제 영역에 그려진 트리에만 존재하는 참조 (ADR-0004)
-  on?: Record<string, EventListener>;   // Phase 2 전용 이벤트 핸들러
+  tag: string; // 항상 소문자 (localName)
+  attrs: Attrs; // 없으면 {}. key와 on* 속성은 넣지 않는다
+  children: VNode[]; // 없으면 []
+  key?: string; // 없으면 키 자체가 없다
+  dom?: Element; // 지금 실제 영역에 그려진 트리에만 있다. Diff는 읽지 않는다
+  events?: EventHandlers; // Phase 2 전용. Diff·비교는 읽지 않는다
 }
 
 export interface VText {
   type: 'text';
-  text: string;                         // 공백 정리 규칙이 적용된 문자열 (ADR-0002)
-  dom?: Text;                           // 실제 텍스트 노드 참조
+  text: string; // 공백 정리 규칙이 적용된 글자
+  dom?: Text;
 }
 
 export type VNode = VElement | VText;
 
-/**
- * h() 함수: 가상 엘리먼트 생성 헬퍼
- */
-export function h(
-  tag: string,
-  attrs?: (Attrs & { key?: string }) | null,
-  ...children: (VNode | string | number | null | undefined)[]
-): VElement {
-  const normalizedAttrs: Attrs = {};
-  let key: string | undefined = undefined;
-
-  if (attrs) {
-    for (const [k, v] of Object.entries(attrs)) {
-      if (k === 'key') {
-        if (v !== undefined && v !== null) {
-          key = String(v);
-        }
-      } else if (v !== undefined && v !== null) {
-        normalizedAttrs[k] = String(v);
-      }
-    }
+/** 테스트·Phase 1 도우미. attrs.key가 있으면 key로 옮긴다 (ADR-0001). */
+export function h(tag: string, attrs?: (Attrs & { key?: string }) | null, ...children: (VNode | string)[]): VElement {
+  const a: Attrs = { ...(attrs ?? {}) };
+  const v: VElement = { type: 'element', tag: tag.toLowerCase(), attrs: a, children: [] };
+  if ('key' in a) {
+    v.key = String(a.key);
+    delete a.key;
   }
-
-  const normalizedChildren: VNode[] = [];
-  for (const child of children) {
-    if (child === null || child === undefined || (child as any) === false) {
-      continue;
-    }
-    if (typeof child === 'string' || typeof child === 'number') {
-      normalizedChildren.push({
-        type: 'text',
-        text: String(child),
-      });
-    } else {
-      normalizedChildren.push(child);
-    }
-  }
-
-  const element: VElement = {
-    type: 'element',
-    tag: tag.toLowerCase(),
-    attrs: normalizedAttrs,
-    children: normalizedChildren,
-  };
-
-  if (key !== undefined) {
-    element.key = key;
-  }
-
-  return element;
+  v.children = children.map((c) => (typeof c === 'string' ? ({ type: 'text', text: c } as VText) : c));
+  return v;
 }
 
-/**
- * FR-01 화면 동일성 비교 (다섯 키: type, tag, attrs, text, children)
- * dom과 key는 비교하지 않는다.
- */
-export function equalScreen(a: VNode | null | undefined, b: VNode | null | undefined): boolean {
-  if (a === b) return true;
-  if (!a || !b) return false;
+function sameAttrs(a: Attrs, b: Attrs): boolean {
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && a[k] === b[k]);
+}
+
+function compare(a: VNode, b: VNode, withKey: boolean): boolean {
   if (a.type !== b.type) return false;
-
-  if (a.type === 'text' && b.type === 'text') {
-    return a.text === b.text;
-  }
-
-  if (a.type === 'element' && b.type === 'element') {
-    if (a.tag !== b.tag) return false;
-
-    // attrs 비교
-    const aKeys = Object.keys(a.attrs);
-    const bKeys = Object.keys(b.attrs);
-    if (aKeys.length !== bKeys.length) return false;
-    for (const k of aKeys) {
-      if (a.attrs[k] !== b.attrs[k]) return false;
-    }
-
-    // children 비교
-    if (a.children.length !== b.children.length) return false;
-    for (let i = 0; i < a.children.length; i++) {
-      if (!equalScreen(a.children[i], b.children[i])) return false;
-    }
-
-    return true;
-  }
-
-  return false;
+  if (a.type === 'text') return a.text === (b as VText).text;
+  const e = b as VElement;
+  if (a.tag !== e.tag || !sameAttrs(a.attrs, e.attrs)) return false;
+  if (withKey && a.key !== e.key) return false;
+  if (a.children.length !== e.children.length) return false;
+  return a.children.every((c, i) => compare(c, e.children[i], withKey));
 }
 
-/**
- * 왕복 불변식 및 완전 동일성 비교 (다섯 키 + key)
- */
-export function equalTree(a: VNode | null | undefined, b: VNode | null | undefined): boolean {
-  if (!equalScreen(a, b)) return false;
-  if (a && b && a.type === 'element' && b.type === 'element') {
-    if (a.key !== b.key) return false;
-    for (let i = 0; i < a.children.length; i++) {
-      if (!equalTree(a.children[i], b.children[i])) return false;
-    }
-  }
-  return true;
+/** FR-01 비교 기준: 화면 데이터 다섯 키만 본다. key·dom·events는 보지 않는다 (ADR-0004 6절). */
+export function equalScreen(a: VNode, b: VNode): boolean {
+  return compare(a, b, false);
+}
+
+/** 왕복 비교: 다섯 키 + key (ADR-0003 Confirmation). equalScreen과 다른 함수다. */
+export function equalTree(a: VNode, b: VNode): boolean {
+  return compare(a, b, true);
 }

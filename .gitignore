@@ -6,3 +6,5 @@ coverage/
 
 # 하네스 보고서 (CI 아티팩트로 남김)
 report/
+.stryker-tmp/
+report/

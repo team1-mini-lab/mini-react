@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+for A in A B C D; do bash scripts/hermes/review.sh 2-design $A; done#!/usr/bin/env bash
 # Hermes 검토 실행 + 결과 검사
 #
 # 사용법:

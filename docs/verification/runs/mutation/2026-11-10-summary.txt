@@ -1,0 +1,12 @@
+뮤테이션 점수 85.8% (죽임 819, 시간초과 16, 살아남음 130, 테스트 없음 8) / 기준 70.0%
+  100.0%  src/component/current.ts
+   79.1%  src/component/function-component.ts
+   84.3%  src/component/h.ts
+   91.6%  src/component/hooks.ts
+   83.3%  src/component/scheduler.ts
+   89.0%  src/core/diff.ts
+   86.5%  src/core/dom.ts
+  100.0%  src/core/history.ts
+   96.7%  src/core/html.ts
+   79.3%  src/core/patch.ts
+   76.2%  src/core/vnode.ts

@@ -1,21 +1,28 @@
-import { describe, it, expect } from 'vitest';
-import { h, equalScreen, equalTree } from '../../src/core/vnode';
+import { describe, expect, it } from 'vitest';
+import { equalScreen, equalTree, h } from '../../src/core/vnode';
 
-describe('[VT-01] VNode 생성 및 비교 모듈', () => {
-  it('h()로 element를 생성하면 올바른 속성과 자식을 갖는다', () => {
-    const v = h('div', { id: 'test', class: 'box', key: 'k1' }, '안녕', h('span', null, '세상'));
-    expect(v.type).toBe('element');
-    expect(v.tag).toBe('div');
-    expect(v.attrs).toEqual({ id: 'test', class: 'box' });
-    expect(v.key).toBe('k1');
-    expect(v.children).toHaveLength(2);
-    expect(v.children[0]).toEqual({ type: 'text', text: '안녕' });
+describe('[VT-01] VNode 모양 (ADR-0001)', () => {
+  it('[VT-01] h()는 소문자 tag, attrs {}, children []를 만들고 key를 attrs에서 뺀다', () => {
+    const v = h('LI', { key: 'a', class: 'x' }, '사과');
+    expect(v).toEqual({ type: 'element', tag: 'li', attrs: { class: 'x' }, key: 'a', children: [{ type: 'text', text: '사과' }] });
+    expect(h('p')).toEqual({ type: 'element', tag: 'p', attrs: {}, children: [] });
+    expect('key' in h('p')).toBe(false);
   });
+});
 
-  it('equalScreen은 화면 5대 키만 비교하고 key나 dom은 무시한다', () => {
-    const a = h('div', { id: 'x', key: '1' }, '글자');
-    const b = h('div', { id: 'x', key: '2' }, '글자');
+describe('[VT-22] 두 비교 함수는 다르다 (ADR-0004 6절)', () => {
+  it('[VT-22] equalScreen은 key를 보지 않고, equalTree는 key를 본다', () => {
+    const a = h('ul', null, h('li', { key: 'a' }, 'x'));
+    const b = h('ul', null, h('li', { key: 'b' }, 'x'));
     expect(equalScreen(a, b)).toBe(true);
-    expect(equalTree(a, b)).toBe(false); // key가 다르므로 equalTree는 false
+    expect(equalTree(a, b)).toBe(false);
+  });
+  it('[VT-22] 둘 다 dom·events를 보지 않는다', () => {
+    const a = h('p', null, 'x');
+    const b = h('p', null, 'x');
+    (a as { dom?: Node }).dom = document.createElement('p');
+    (b as { events?: object }).events = { click: () => {} };
+    expect(equalScreen(a, b)).toBe(true);
+    expect(equalTree(a, b)).toBe(true);
   });
 });

@@ -2,7 +2,7 @@
 
 # Optional metadata
 
-status: proposed
+status: accepted
 date: 2026-11-10
 decision-makers: [@ksomang]
 consulted: [@hnjee @onekindalpha]

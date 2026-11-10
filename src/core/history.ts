@@ -1,76 +1,46 @@
-/**
- * State History 모듈 (ADR-0008, j1 선형 기록)
- */
-
+// State History (SDD_final_phase1 6장, ADR-0008): 선형 기록 + 지금 위치. DOM을 모른다.
 export class History<T> {
-  private stack: T[] = [];
-  private currentIdx = -1;
-  private limit: number;
+  private entries: T[];
+  private cursor: number;
 
-  constructor(initialState: T, limit = 100) {
-    this.limit = limit;
-    this.stack.push(initialState);
-    this.currentIdx = 0;
+  constructor(initial: T) {
+    this.entries = [initial];
+    this.cursor = 0;
   }
 
   get current(): T {
-    return this.stack[this.currentIdx];
+    return this.entries[this.cursor];
   }
-
   get index(): number {
-    return this.currentIdx;
+    return this.cursor;
   }
-
   get size(): number {
-    return this.stack.length;
+    return this.entries.length;
   }
 
-  /**
-   * push: 새 상태 추가
-   * 현재 위치 이후의 모든 분기 기록은 잘라낸다 (j1 선형 기록)
-   */
+  /** j1: 지금 위치 뒤의 기록을 지우고 추가한다. 같은 객체를 그대로 넣는다(복사하지 않음). */
   push(state: T): void {
-    // 현재 인덱스 뒤쪽 삭제
-    this.stack = this.stack.slice(0, this.currentIdx + 1);
-    this.stack.push(state);
-
-    // 용량 초과 시 앞에서 제거
-    if (this.stack.length > this.limit) {
-      this.stack.shift();
-    } else {
-      this.currentIdx++;
-    }
-  }
-
-  canUndo(): boolean {
-    return this.currentIdx > 0;
-  }
-
-  canRedo(): boolean {
-    return this.currentIdx < this.stack.length - 1;
+    this.entries = this.entries.slice(0, this.cursor + 1);
+    this.entries.push(state);
+    this.cursor = this.entries.length - 1;
   }
 
   undo(): T | null {
-    if (!this.canUndo()) {
-      return null;
-    }
-    this.currentIdx--;
+    if (!this.canUndo()) return null;
+    this.cursor -= 1;
     return this.current;
   }
 
   redo(): T | null {
-    if (!this.canRedo()) {
-      return null;
-    }
-    this.currentIdx++;
+    if (!this.canRedo()) return null;
+    this.cursor += 1;
     return this.current;
   }
 
-  goTo(idx: number): T | null {
-    if (idx < 0 || idx >= this.stack.length) {
-      return null;
-    }
-    this.currentIdx = idx;
-    return this.current;
+  canUndo(): boolean {
+    return this.cursor > 0;
+  }
+  canRedo(): boolean {
+    return this.cursor < this.entries.length - 1;
   }
 }

@@ -8,9 +8,9 @@
 | 항목 | 내용 |
 |---|---|
 | 프로젝트명 | 미니 React 구현 프로젝트 |
-| 문서 버전 | 1.4 (ADR-0005 t3·ADR-0002 s2·ADR-0015 반영, 기준 설계 문서 `docs/specs/SDD_final_phase1.md`·`SDD_final_phase2.md`) |
+| 문서 버전 | 1.5 (제안 ADR-0016~0019·제안 요구사항 TBD-11~13 추가, 이전: 1.4 ADR-0005 t3·ADR-0002 s2·ADR-0015 반영, 기준 설계 문서 `docs/specs/SDD_final_phase1.md`·`SDD_final_phase2.md`) |
 | 작성일 | 2026-11-07 |
-| 개정일 | 2026-11-10 (1.2, 1.3, 1.4) |
+| 개정일 | 2026-11-10 (1.2, 1.3, 1.4, 1.5) |
 | 작성자 | 프로젝트 팀원 전체 |
 | 검토자 | 프로젝트 팀원 전체 |
 | 문서 상태 | Review (proposed ADR-0008~0012·0015 승인 및 "재확인 필요" 절 재확인 대기) |
@@ -23,6 +23,8 @@
 | 1.2 | 2026-11-10 | FR-01·02·03·04·05·06·07·08 요구사항/인수 기준 개정, FR-09 신설, NFR-01·03 측정 기준 구체화, IR-01·04·05·06 개정, IR-09·10 및 CON-07 신설, VT-01~06 개정, VT-36~46 신설, TBD-01~05 결정 근거 연결, TBD-07~10 신설, 6.2 ADR 충돌 사항(CF) 및 5.1.3·5.1.4 추적표 추가 | ADR-0001~0006 (`somage/works`), `리액트 issue.md`, ADR 목록(`docs/adr/README.md`) |
 | 1.3 | 2026-11-10 | FR-07에 변경 없는 Patch 예외(k1), FR-08에 수정 중 이동 금지(m3·n2) 추가, VT-47~49 신설, IR-04·06과 VT-31을 ADR-0013·0014에 연결, IR에 코드 이름 병기, TBD-01·06·07·08 상태 갱신, 5.1.3에 ADR-0013·0014 추가, 6.2에 CF-09·10 추가 | ADR-0008 개정(팀 설계 검토, 블로그 97), ADR-0013·0014(복구), SDD v0.5 정합성 검토 |
 | 1.4 | 2026-11-10 | CF-03을 ADR-0005 6절 t3(실패 시 컨테이너 재구축)로, CF-04를 ADR-0002 4절 s2로 다시 판정하고 ADR-0013·0014를 superseded로 표시. IR-04·IR-06·VT-31·TBD-07·TBD-08·5.1.3·6.2 갱신. ADR-0015(컴포넌트 렌더링, `events` 키) 추가. CON-01을 "검증 페이지와 의존 패키지까지 UI 프레임워크 0"으로 구체화하고 VT-23 합격 기준을 자동 검사로 바꿈. VT-07(k1, 같은 객체 저장), VT-22(FR-10 연결), VT-28(용어) 수정. 기준 SDD를 `docs/specs/SDD_final_phase1.md`·`SDD_final_phase2.md`로 지정 | ADR-0005 6절, ADR-0002 4절, ADR-0015, 피드백 01~06(`docs/reviews/`), 하네스 정합성 검사 |
+| 1.5 | 2026-11-10 | 설계 검토 반례에서 나온 제안 ADR-0016~0019를 5.1.3에 추가(모두 proposed, 요구사항 문장은 바꾸지 않음). 과제 원문의 제출물·차별화 항목을 **제안 요구사항** TBD-11(README), TBD-12(통째 교체 vs Patch 비교 화면), TBD-13(key 유무 비교 시연)으로 추가 | 설계 검토 결과(`docs/verification/results/2026-11-10-2-design-ALL-claude.md`), 과제 원문, `SDD_final_common.md` 5장 |
+| 1.6 | 2026-11-10 | TBD-13(key 유무 비교 시연)을 채택으로 바꿈. 차별화는 `SDD_final_common.md` 5장 1(하이라이트)·4(트리 보기)·5(key 비교)로 확정 | 팀 결정, Phase 1·2 구현 |
 
 > **ADR 번호 안내**: v1.2부터 `docs/adr/README.md`의 통합 번호를 쓴다. ADR-0001~0006은 `somage/works`의 설계 ADR(accepted), ADR-0007~0012는 `eungi/docs/adr`의 ADR을 다시 매긴 번호, ADR-0015는 컴포넌트 렌더링 ADR이다. ADR-0013·0014는 v1.4에서 superseded(각각 ADR-0005 6절 t3, ADR-0002 4절 s2로 대체)되어 `docs/adr/superseded/`에 보관한다. 대응은 5.1.3에 있다.
 >
@@ -363,6 +365,10 @@
 | ADR-0011 | `eungi` adr_008 | 테스트 하네스 (Vitest + jsdom) | proposed | CON-05 | VT-35 |
 | ADR-0012 | `eungi` adr_009 | 설계 준수 검증 하네스 자동화 | proposed | NFR-02, NFR-04, CON-01 | VT-22, VT-23 |
 | ADR-0015 | 피드백 03·06(블로그 99·102) | 컴포넌트 렌더링 (`h` 즉시 펼침, `mount`·`update`, `events`) | proposed | FR-11~FR-14, FR-22 | VT-10, VT-11, VT-13, VT-17 |
+| ADR-0016 | 설계 검토 반례 1·2·3 (2026-11-10) | 건너뛴 노드 양옆 글자 노드 합치기, ADR-0002 보완 | proposed | FR-01, FR-03, IR-04, IR-10 | VT-33, VT-37, VT-39, VT-47 |
+| ADR-0017 | 설계 검토 반례 5 | 뒤로·앞으로가기 중 t3 복구 시 History 유지, ADR-0005 6절 보완 | proposed | FR-08, IR-06 | VT-31, VT-45 |
+| ADR-0018 | 설계 검토 반례 4 | `<pre>` 첫 줄바꿈 왕복, ADR-0006 a3 보완 | proposed | IR-10 | VT-39 |
+| ADR-0019 | 설계 검토 반례 6, SDD 11장 | Phase 1 페이지 경계 동작 4가지 | proposed | FR-02, FR-08, IR-01, IR-03 | VT-30, VT-48 |
 | ADR-0013 | `eungi` adr_005에서 복구 | Patch 적용 전 검증 (t2) | superseded by ADR-0005 6절 t3 (v1.4) | — | — |
 | ADR-0014 | `eungi` adr_003에서 복구 | 입력 정제 | superseded by ADR-0002 4절 s2 (v1.4) | — | — |
 | (superseded) | `eungi` adr_003 | 테스트 영역 수정 방식 | superseded by ADR-0006 (삭제) | 입력 정제는 ADR-0002 4절 | — |
@@ -410,6 +416,9 @@
 | TBD-08 | 입력 HTML의 `<script>`와 `on*` 속성 처리 (CF-04) | `vdom_to_dom`이 `setAttribute("onclick", …)`를 하면 핸들러가 실제로 동작함 | **s2로 확정**: `dom_to_vdom`에서 `<script>`, `on*` 속성, `javascript:`로 시작하는 `href`·`src`를 건너뛴다(ADR-0002 4절, 구 ADR-0014 대체). 4절 재확인 필요 |
 | TBD-09 | 재귀 깊이 기준 | ADR-0002 T9, ADR-0003, ADR-0005 D14·P11(100겹, 임시 값)이 같은 기준을 공유함 | 미결 (회의 후 결정) |
 | TBD-10 | issue.md와 SRS의 ID 체계 정렬 | Phase 2 FR 번호, NFR-04 의미, C-xx ↔ CON-xx가 서로 달라 ADR이 인용하는 ID가 문서마다 다른 요구를 가리킴. issue.md FR-12는 SRS에 대응 항목이 없음 | 미결. 5.1.4 대응표를 기준으로 두 문서 중 하나로 통일 필요 |
+| TBD-11 | (제안 요구사항) 산출물 `README.md` | 과제 원문의 제출물이자 4분 발표 자료. 중점 포인트(DOM·Window, 변화 감지 API, Reflow·Repaint, Virtual DOM 구조·필요성, Diff 핵심 케이스, 실제 React와의 차이, Batching)에 답해야 함 | **채택 (2026-11-10)**. Phase 2 완료 후 작성. 코드 검토 체크리스트로 확인 |
+| TBD-12 | (제안 요구사항) 통째 교체(`innerHTML`) vs Patch 비교 화면 | 같은 변경을 두 방식으로 적용해 `MutationObserver` 기록 수와 입력값 유지 여부를 나란히 보여 줌. 과제 원문 "실제 DOM의 변화를 감지하는 브라우저 API"와 "다른 팀과의 차별점"에 대응 | 보류 (Phase 2 이후) |
+| TBD-13 | (제안 요구사항) key 있음·없음 비교 시연 | 같은 목록 변경을 key 유무로 Patch해 입력값이 따라가는지 보여 줌 (FR-09 시연) | 채택 (2026-11-10, 팀 차별화 1·4·5번 결정). `pages/phase1/key-demo.ts`, 통합 테스트 `[VT-36] key 데모` |
 
 ## 6.2 ADR 간 충돌 사항 (CF)
 

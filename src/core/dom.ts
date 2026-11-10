@@ -1,161 +1,79 @@
-/**
- * DOM ↔ Virtual DOM 변환 모듈 (ADR-0002, ADR-0003, ADR-0014, CF-04 s2)
- */
+// DOM ↔ Virtual DOM 변환 (SDD_final_phase1 3.1·3.2, ADR-0002·0003·0016)
+import type { Attrs, VElement, VNode, VText } from './vnode';
 
-import { VElement, VNode, VText } from './vnode';
+const WS = /[ \t\n\r\f]+/g; // \s는 &nbsp;까지 줄이므로 쓰지 않는다 (T8)
+const WS_ONLY = /^[ \t\n\r\f]*$/;
+const URL_ATTRS = new Set(['href', 'src']);
 
 export interface DomToVNodeOptions {
-  recordDom?: boolean;  // 실제 영역 첫 로드 시에만 true (T13)
-  inPre?: boolean;      // <pre> 내부 여부
+  /** 실제 영역을 처음 변환할 때만 true (ADR-0002 2) */
+  recordDom?: boolean;
 }
 
-/**
- * domToVNode: 브라우저 DOM 노드를 Virtual DOM으로 변환
- * - 주석(nodeType 8) 및 <script> 건너뜀 (CF-04 S1)
- * - on* 이벤트 속성 제거 (CF-04 S2)
- * - javascript: 링크/속성 제거 (CF-04 S3)
- * - 공백 정리: <pre> 밖 연속 공백 축약 (ADR-0002)
- */
+/** 실제 DOM 노드 → VNode. 주석·<script>는 부모가 건너뛰고, on*·javascript: 속성은 넣지 않는다 (s2). */
 export function domToVNode(node: Node, opts: DomToVNodeOptions = {}): VNode {
-  if (!node) {
-    throw new TypeError('domToVNode: 유효한 DOM 노드가 필요합니다.');
+  if (node == null || typeof (node as Node).nodeType !== 'number') {
+    throw new TypeError('domToVNode: Node가 아닌 값입니다');
   }
-
-  // 1. Text 노드 (nodeType === 3)
-  if (node.nodeType === Node.TEXT_NODE) {
-    const rawText = node.nodeValue ?? '';
-    let text: string;
-
-    if (opts.inPre) {
-      // <pre> 내부는 공백/줄바꿈 보존 (T4)
-      text = rawText;
-    } else {
-      // 그 외에는 연속 공백 5종 치환 (T1)
-      text = rawText.replace(/[ \t\n\r\f]+/g, ' ');
-    }
-
-    const vtext: VText = {
-      type: 'text',
-      text,
-    };
-
-    if (opts.recordDom) {
-      vtext.dom = node as Text;
-    }
-
-    return vtext;
+  if (node.nodeType !== 1 && node.nodeType !== 3) {
+    throw new TypeError('domToVNode: 태그 노드나 글자 노드만 변환합니다');
   }
-
-  // 2. Element 노드 (nodeType === 1)
-  if (node.nodeType === Node.ELEMENT_NODE) {
-    const el = node as Element;
-    const tag = el.localName.toLowerCase(); // 소문자 (T11)
-    const inPre = opts.inPre || tag === 'pre';
-
-    const attrs: Record<string, string> = {};
-    let key: string | undefined = undefined;
-
-    // 속성 복사 및 필터링
-    for (let i = 0; i < el.attributes.length; i++) {
-      const attr = el.attributes[i];
-      const attrName = attr.name.toLowerCase();
-      const attrVal = attr.value;
-
-      // key 속성 분리 (T15)
-      if (attrName === 'key') {
-        key = attrVal;
-        continue;
-      }
-
-      // 악성 스크립트 정제 (CF-04 s2, S2, S3)
-      if (attrName.startsWith('on')) {
-        continue; // onclick, onerror 등 제거
-      }
-      if (
-        ['href', 'src', 'action', 'formaction', 'xlink:href'].includes(attrName) &&
-        attrVal.trim().toLowerCase().startsWith('javascript:')
-      ) {
-        continue; // javascript: 스크립트 실행 방지
-      }
-
-      attrs[attr.name] = attrVal;
-    }
-
-    // 자식 노드 순회
-    const children: VNode[] = [];
-    for (let i = 0; i < el.childNodes.length; i++) {
-      const child = el.childNodes[i];
-
-      // 주석(nodeType 8) 및 <script> 건너뜀 (S1, VT-02)
-      if (child.nodeType === Node.COMMENT_NODE) {
-        continue;
-      }
-      if (child.nodeType === Node.ELEMENT_NODE && (child as Element).localName.toLowerCase() === 'script') {
-        continue;
-      }
-
-      // 텍스트나 엘리먼트만 변환
-      if (child.nodeType === Node.TEXT_NODE || child.nodeType === Node.ELEMENT_NODE) {
-        const vchild = domToVNode(child, {
-          recordDom: opts.recordDom,
-          inPre,
-        });
-
-        // <pre> 밖에서 빈 텍스트 노드는 제외 가능하나, 공백 한 칸(" ")은 보존
-        if (vchild.type === 'text' && vchild.text === '' && !inPre) {
-          continue;
-        }
-
-        children.push(vchild);
-      }
-    }
-
-    const velement: VElement = {
-      type: 'element',
-      tag,
-      attrs,
-      children,
-    };
-
-    if (key !== undefined) {
-      velement.key = key;
-    }
-
-    if (opts.recordDom) {
-      velement.dom = el;
-    }
-
-    return velement;
-  }
-
-  throw new TypeError(`domToVNode: 지원하지 않는 노드 타입입니다 (${node.nodeType})`);
+  return convert(node, !!opts.recordDom, false);
 }
 
-/**
- * vnodeToDom: Virtual DOM을 기반으로 실제 브라우저 DOM 트리 생성 (화면 밖, ADR-0003)
- * - dom 필드는 일체 읽지도 기록하지도 않는다 (규칙 4)
- */
+function convert(node: Node, record: boolean, inPre: boolean): VNode {
+  if (node.nodeType === 3) {
+    const raw = node.nodeValue ?? '';
+    const v: VText = { type: 'text', text: inPre ? raw : raw.replace(WS, ' ') };
+    if (record) v.dom = node as Text;
+    return v;
+  }
+  const el = node as Element;
+  const tag = el.localName;
+  const pre = inPre || tag === 'pre';
+  const attrs: Attrs = {};
+  let key: string | undefined;
+  for (const a of Array.from(el.attributes)) {
+    if (a.name === 'key') {
+      key = a.value;
+      continue;
+    }
+    if (a.name.toLowerCase().startsWith('on')) continue; // S2
+    if (URL_ATTRS.has(a.name.toLowerCase()) && a.value.trim().toLowerCase().startsWith('javascript:')) continue; // S3
+    attrs[a.name] = a.value;
+  }
+  const children: VNode[] = [];
+  for (const c of Array.from(el.childNodes)) {
+    if (c.nodeType === 3 || (c.nodeType === 1 && (c as Element).localName !== 'script')) {
+      children.push(convert(c, record, pre));
+    } // 주석·<script>·그 밖의 노드는 건너뛴다 (T7, S1)
+  }
+  const v: VElement = { type: 'element', tag, attrs, children: mergeWhitespace(children, pre) };
+  if (key !== undefined) v.key = key;
+  if (record) v.dom = el;
+  return v;
+}
+
+/** ADR-0016 (가): 건너뛴 노드 때문에 나란히 남은 공백 글자 노드를 하나로 합친다. dom은 첫 노드. */
+function mergeWhitespace(children: VNode[], pre: boolean): VNode[] {
+  const out: VNode[] = [];
+  for (const c of children) {
+    const last = out[out.length - 1];
+    if (last && last.type === 'text' && c.type === 'text' && WS_ONLY.test(last.text) && WS_ONLY.test(c.text)) {
+      last.text = pre ? last.text + c.text : ' ';
+      continue; // last.dom(첫 실제 노드)는 그대로 둔다 (T17)
+    }
+    out.push(c);
+  }
+  return out;
+}
+
+/** VNode → 화면 밖 실제 DOM 노드. dom을 읽지도 기록하지도 않는다 (ADR-0003). */
 export function vnodeToDom(v: VNode): Node {
-  if (v.type === 'text') {
-    return document.createTextNode(v.text);
-  }
-
+  if (v.type === 'text') return document.createTextNode(v.text);
   const el = document.createElement(v.tag);
-
-  // 속성 설정
-  for (const [name, val] of Object.entries(v.attrs)) {
-    el.setAttribute(name, val);
-  }
-
-  // key가 있으면 key 속성으로 다시 부착 (IR-09)
-  if (v.key !== undefined) {
-    el.setAttribute('key', v.key);
-  }
-
-  // 자식 재귀 생성
-  for (const child of v.children) {
-    el.appendChild(vnodeToDom(child));
-  }
-
+  for (const [k, val] of Object.entries(v.attrs)) el.setAttribute(k, val);
+  if (v.key !== undefined) el.setAttribute('key', v.key);
+  for (const c of v.children) el.appendChild(vnodeToDom(c));
   return el;
 }

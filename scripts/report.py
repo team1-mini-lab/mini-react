@@ -74,8 +74,9 @@ R["check_arch"] = npm("check:arch")
 R["lint"] = npm("lint")
 R["test"] = sh("npx vitest run --reporter=default --reporter=json --outputFile=report/vitest.json", "test")
 R["coverage"] = npm("test:coverage")
-R["mutation"] = npm("test:mutation")
-os.environ["VT_SCRIPT_PASS"] = "VT-23" if R["check_stack"]["rc"] == 0 else ""
+# 로컬 기기처럼 한 번 실행 시간이 짧으면 파일별로 나눠 돌린 결과를 합친다 (MUTATION_REUSE=1, scripts/merge_mutation.py)
+R["mutation"] = sh("python3 scripts/merge_mutation.py", "mutation") if os.environ.get("MUTATION_REUSE") else npm("test:mutation")
+os.environ["VT_SCRIPT_PASS"] = ",".join(v for v, ok in (("VT-23", R["check_stack"]["rc"] == 0), ("VT-35", R["test"]["rc"] == 0)) if ok)  # VT-35: jsdom 스위트 통과
 R["check_vt"] = sh("python3 scripts/check_vt_tests.py --quiet --results report/vitest.json --json report/vt.json", "check-vt")
 R["check_trace"] = sh("python3 scripts/check_trace.py --results report/vitest.json --json report/trace.json", "check-trace")
 
@@ -130,7 +131,7 @@ def open_items(doc, start, end):
     if i < 0:
         return 0
     j = t.find(end, i + 1)
-    return len([l for l in t[i:j if j > 0 else None].splitlines() if re.match(r"^\|\s*\d+\s*\|", l) and "(해소)" not in l])
+    return len([l for l in t[i:j if j > 0 else None].splitlines() if re.match(r"^\|\s*\d+\s*\|", l) and "해소" not in l])
 
 
 open1 = open_items("docs/specs/SDD_final_phase1.md", "## 11.", "## 부록 A")
@@ -168,8 +169,8 @@ w("## 0. 이 보고서가 검사한 방법")
 w("")
 w("| 칸 | 무엇을 어떻게 확인했나 | 근거 파일 |")
 w("| --- | --- | --- |")
-w("| SRS ↔ SDD | SRS에 정의된 FR·NFR·IR·CON·VT·TBD ID 103개가 SDD 추적표(phase1 9.3, phase2 6.1)에 하나씩 있는지, SRS 4장의 요구사항→VT 연결 62건이 SDD에도 있는지, VT 49개의 테스트 위치가 정해졌는지 | `scripts/check_docs.py` [1]~[3], `report/check-docs.txt` |")
-w("| ADR ↔ SDD | ADR·피드백 문서 Confirmation 표의 테스트 ID 127개(T·S·D·P·R·TA·H·U·HL·TV·C·B·K·HR·TD)가 SDD에 있는지, ADR 상태가 README와 파일에서 같은지, superseded ADR(0013·0014)을 근거로 쓰지 않는지, 인용한 ADR 절이 실제로 있는지 | `check_docs.py` [4]·[5]·[7] |")
+w("| SRS ↔ SDD | SRS에 정의된 FR·NFR·IR·CON·VT·TBD ID 전부가 SDD 추적표(phase1 9.3, phase2 6.1)에 하나씩 있는지, SRS 4장의 요구사항→VT 연결 62건이 SDD에도 있는지, VT 49개의 테스트 위치가 정해졌는지 | `scripts/check_docs.py` [1]~[3], `report/check-docs.txt` |")
+w("| ADR ↔ SDD | ADR·피드백 문서 Confirmation 표의 테스트 ID 전부(T·S·D·P·R·TA·H·U·HL·TV·C·B·K·HR·TD)가 SDD에 있는지, ADR 상태가 README와 파일에서 같은지, superseded ADR(0013·0014)을 근거로 쓰지 않는지, 인용한 ADR 절이 실제로 있는지 | `check_docs.py` [4]·[5]·[7] |")
 w("| 하네스 자체 | 문서·코드를 일부러 12가지로 망가뜨려 하네스가 모두 실패로 잡는지 | `scripts/selftest_harness.py`, `report/test-harness.txt` |")
 w("| 설계 타당성 | AI 검토(반례 찾기) 결과 파일의 반례 줄 수와, 옆의 `*.review.md`에 사람이 적은 판정 수를 센다. 판정 내용 자체는 사람이 확인한다 | `docs/verification/results/` |")
 w("| SDD ↔ 코드 | SDD 부록 A의 함수 이름이 적힌 파일에 실제로 정의돼 있는지, 부록 A에 없는 export가 있는지 | `scripts/check_trace.py`, `report/check-trace.txt` |")

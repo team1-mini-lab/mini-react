@@ -1,190 +1,151 @@
-/**
- * Patch 모듈 (ADR-0005, ADR-0013, CF-03 t3)
- * 
- * - 실제 브라우저 DOM을 최소 조작으로 갱신하는 쓰기 전용 모듈
- * - 0단계 확인: 모든 대상의 dom 참조 확인 (ADR-0013)
- * - 1단계: DOM 변경 순차 적용 (C2)
- * - 2단계: 기존 노드의 dom 복사 (D1)
- * - 3단계: 새로 만든 노드의 dom 재귀 기록 (F1: recordDom)
- * - 예외 발생 시 t3 복구 프로토콜 (recoverPatch) 가동
- */
-
+// Patch (SDD_final_phase1 5장, ADR-0005·0004 1절·0015 3절). 실제 영역 DOM을 바꾸는 유일한 모듈.
+import type { DiffResult } from './diff';
 import { vnodeToDom } from './dom';
-import { Change, DiffResult } from './diff';
-import { VElement, VNode } from './vnode';
+import type { EventHandlers, VNode } from './vnode';
 
-export class PatchError extends Error {
-  constructor(public change: Change | null, message: string) {
-    super(`[PatchError] ${message}`);
-    this.name = 'PatchError';
-  }
+export interface PatchOptions {
+  highlight?: boolean;
+  highlightExcludeTags?: string[]; // Phase 1: [], Phase 2 Todo: ['input', 'textarea']
 }
 
-export interface PatchApplyResult {
+export interface PatchResult {
   applied: number;
+  recovered: boolean;
 }
 
-/**
- * applyPatch: DiffResult를 받아 실제 DOM에 변경을 적용하고 새 트리에 dom 참조를 넘김
- */
-export function applyPatch(result: DiffResult): PatchApplyResult {
-  const { changes, pairs } = result;
+function need<T>(v: T | undefined | null, what: string): T {
+  if (v == null) throw new Error(`[patch] ${what}의 dom 참조가 없습니다`);
+  return v;
+}
 
-  // 0단계: 사전 유효성 검사 (ADR-0013)
-  for (const ch of changes) {
-    if (ch.kind === 'remove' || ch.kind === 'replace' || ch.kind === 'text') {
-      if (!ch.target.dom) {
-        throw new PatchError(ch, `${ch.kind} 대상의 dom 참조가 없습니다.`);
-      }
-    } else if (ch.kind === 'attrs') {
-      if (!ch.target.dom) {
-        throw new PatchError(ch, 'attrs 대상의 dom 참조가 없습니다.');
-      }
-    } else if (ch.kind === 'move') {
-      if (!ch.target.dom) {
-        throw new PatchError(ch, 'move 대상의 dom 참조가 없습니다.');
-      }
-      if (!ch.parent.dom) {
-        throw new PatchError(ch, 'move 부모의 dom 참조가 없습니다.');
-      }
-      if (ch.before && !ch.before.dom) {
-        throw new PatchError(ch, 'move 기준(before) 노드의 dom 참조가 없습니다.');
-      }
-    } else if (ch.kind === 'add') {
-      if (!ch.parent.dom) {
-        throw new PatchError(ch, 'add 부모의 dom 참조가 없습니다.');
-      }
-      if (ch.before && !ch.before.dom) {
-        throw new PatchError(ch, 'add 기준(before) 노드의 dom 참조가 없습니다.');
-      }
-    }
-  }
-
-  // 1단계: DOM 변경 순차 적용
-  for (const ch of changes) {
-    switch (ch.kind) {
-      case 'remove': {
-        const dom = ch.target.dom;
-        if (dom && dom.parentNode) {
-          dom.parentNode.removeChild(dom);
+/** 1단계 changes 적용 → 2단계 pairs dom 복사(+events) → 3단계 새 노드 recordDom. 실패하면 t3 복구 (ADR-0005 6절). */
+export function applyPatch(container: Element, nextTree: VNode, result: DiffResult, opts: PatchOptions = {}): PatchResult {
+  const created: [VNode, Node][] = [];
+  try {
+    for (const ch of result.changes) {
+      switch (ch.kind) {
+        case 'remove':
+          (need(ch.target.dom, 'remove 대상') as ChildNode).remove();
+          break;
+        case 'add': {
+          const el = vnodeToDom(ch.node);
+          const ref = ch.before ? need(ch.before.dom, 'add 기준') : null;
+          need(ch.parent.dom, 'add 부모').insertBefore(el, ref);
+          created.push([ch.node, el]);
+          break;
         }
-        break;
-      }
-      case 'replace': {
-        const oldDom = ch.target.dom;
-        if (oldDom && oldDom.parentNode) {
-          const newDom = vnodeToDom(ch.node);
-          oldDom.parentNode.replaceChild(newDom, oldDom);
-          // 새로 만든 노드에 dom 기록 (F1)
-          recordDom(ch.node, newDom);
+        case 'replace': {
+          const el = vnodeToDom(ch.node);
+          (need(ch.target.dom, 'replace 대상') as ChildNode).replaceWith(el);
+          created.push([ch.node, el]);
+          break;
         }
-        break;
-      }
-      case 'text': {
-        const dom = ch.target.dom as Text;
-        if (dom) {
-          dom.nodeValue = ch.text;
+        case 'text': {
+          const t = need(ch.target.dom, 'text 대상');
+          if (t.nodeType !== 3) throw new Error('[patch] text 대상이 글자 노드가 아닙니다');
+          t.nodeValue = ch.text;
+          break;
         }
-        break;
-      }
-      case 'attrs': {
-        const el = ch.target.dom as HTMLElement;
-        if (el) {
+        case 'attrs': {
+          const el = need(ch.target.dom, 'attrs 대상');
           for (const [k, v] of Object.entries(ch.set)) {
             el.setAttribute(k, v);
-            // value 및 checked 프로퍼티 동기화 (CF-10)
-            if (k === 'value' && 'value' in el && (el as HTMLInputElement).value !== v) {
-              (el as HTMLInputElement).value = v;
-            }
-            if (k === 'checked' && 'checked' in el && (el as HTMLInputElement).checked !== (v === 'true')) {
-              (el as HTMLInputElement).checked = v === 'true';
-            }
+            syncProperty(el, k, v);
           }
           for (const k of ch.remove) {
             el.removeAttribute(k);
+            syncProperty(el, k, null);
           }
+          break;
         }
-        break;
-      }
-      case 'move': {
-        const parentDom = ch.parent.dom as Element;
-        const targetDom = ch.target.dom as Node;
-        const beforeDom = ch.before?.dom ?? null;
-        if (parentDom && targetDom) {
-          parentDom.insertBefore(targetDom, beforeDom);
+        case 'move': {
+          const ref = ch.before ? need(ch.before.dom, 'move 기준') : null;
+          need(ch.parent.dom, 'move 부모').insertBefore(need(ch.target.dom, 'move 대상'), ref);
+          break;
         }
-        break;
-      }
-      case 'add': {
-        const parentDom = ch.parent.dom as Element;
-        const beforeDom = ch.before?.dom ?? null;
-        if (parentDom) {
-          const newDom = vnodeToDom(ch.node);
-          parentDom.insertBefore(newDom, beforeDom);
-          // 새로 만든 노드에 dom 기록 (F1)
-          recordDom(ch.node, newDom);
-        }
-        break;
       }
     }
-  }
-
-  // 2단계: 기존 노드의 dom 복사 (D1)
-  for (const [oldNode, newNode] of pairs) {
-    if (oldNode.dom) {
-      newNode.dom = oldNode.dom as any;
+    for (const [o, n] of result.pairs) {
+      (n as { dom?: Node }).dom = need(o.dom, '짝 노드');
+      if (n.type === 'element') syncEvents(n.dom as Element, n.events);
     }
+    for (const [v, node] of created) recordDom(v, node);
+  } catch (err) {
+    recoverPatch(container, nextTree, err);
+    return { applied: 0, recovered: true };
   }
-
-  return { applied: changes.length };
+  if (opts.highlight) highlightChanges(result, opts.highlightExcludeTags ?? []);
+  return { applied: result.changes.length, recovered: false };
 }
 
-/**
- * recordDom: 새로 만든 VNode 트리와 실제 DOM 트리를 나란히 내려가며 dom 참조 기록 (F1)
- */
+/** value·checked는 지금 값(프로퍼티)이 다를 때만 쓴다 — 커서가 튀지 않게 (ADR-0004 1절, TD3~TD5). */
+function syncProperty(el: Element, k: string, v: string | null): void {
+  const any = el as unknown as Record<string, unknown>;
+  if (k === 'value' && 'value' in el) {
+    const next = v ?? '';
+    if (any.value !== next) any.value = next;
+  } else if (k === 'checked' && 'checked' in el) {
+    const next = v !== null;
+    if (any.checked !== next) any.checked = next;
+  }
+}
+
+/** F1: 새 트리와 막 만든 실제 노드를 같은 순서로 내려가며 dom을 적는다. */
 export function recordDom(v: VNode, node: Node): void {
-  if (v.type === 'text') {
-    v.dom = node as Text;
-    return;
-  }
-
-  v.dom = node as Element;
-  const el = node as Element;
-
-  let childDomIdx = 0;
-  for (let i = 0; i < v.children.length; i++) {
-    const vchild = v.children[i];
-    // 실제 DOM에서 주석 노드가 있을 경우 건너뜀 (신규 생성 노드에는 주석이 없으나 방어코드)
-    while (
-      childDomIdx < el.childNodes.length &&
-      el.childNodes[childDomIdx].nodeType === Node.COMMENT_NODE
-    ) {
-      childDomIdx++;
-    }
-
-    const childDom = el.childNodes[childDomIdx];
-    if (childDom) {
-      recordDom(vchild, childDom);
-      childDomIdx++;
-    }
+  (v as { dom?: Node }).dom = node;
+  if (v.type === 'element') {
+    syncEvents(node as Element, v.events);
+    v.children.forEach((c, i) => recordDom(c, node.childNodes[i]));
   }
 }
 
-/**
- * recoverPatch: Patch 실패 시 전체를 다시 그리고 복구하는 프로토콜 (CF-03, t3)
- */
+/** t3: 컨테이너의 루트를 새 트리로 통째 다시 그리고 dom을 새로 기록한다. */
 export function recoverPatch(container: Element, nextTree: VNode, error: unknown): void {
-  console.error('[Patch Recovery] Patch 적용 중 오류가 발생하여 실제 영역을 다시 그립니다:', error);
+  console.error('[patch] Patch 도중 오류가 나서 실제 영역을 다시 그립니다:', error);
+  const root = vnodeToDom(nextTree);
+  const first = container.firstElementChild;
+  if (first) first.replaceWith(root);
+  else container.appendChild(root);
+  recordDom(nextTree, root);
+}
 
-  const newRootDom = vnodeToDom(nextTree);
+/** Phase 2 첫 렌더: 컨테이너를 비우고 트리를 한 번 붙인 뒤 dom을 기록한다 (ADR-0015 2절). */
+export function mountTree(container: Element, v: VNode): void {
+  const root = vnodeToDom(v);
+  container.replaceChildren(root);
+  recordDom(v, root);
+}
 
-  // 컨테이너 첫 번째 자식을 교체하거나 추가
-  if (container.firstElementChild) {
-    container.replaceChild(newRootDom, container.firstElementChild);
-  } else {
-    container.appendChild(newRootDom);
+// ---- 이벤트 (ADR-0015 3절): 요소마다 종류별 고정 리스너 하나, 핸들러는 __handlers에서 꺼낸다 ----
+type HandlerHost = Element & { __handlers?: EventHandlers };
+
+function dispatch(this: HandlerHost, e: Event): void {
+  const host = e.currentTarget as HandlerHost;
+  host.__handlers?.[e.type]?.call(host, e);
+}
+
+export function syncEvents(el: Element, next?: EventHandlers): void {
+  const host = el as HandlerHost;
+  const prev = host.__handlers;
+  if (!prev && !next) return;
+  const n = next ?? {};
+  for (const type of Object.keys(n)) if (!prev || !(type in prev)) el.addEventListener(type, dispatch);
+  if (prev) for (const type of Object.keys(prev)) if (!(type in n)) el.removeEventListener(type, dispatch);
+  host.__handlers = { ...n };
+}
+
+// ---- 하이라이트 y2: class·style을 건드리지 않는 animate() 0.6초 ----
+function highlightChanges(result: DiffResult, exclude: string[]): void {
+  const targets = new Set<Element>();
+  for (const ch of result.changes) {
+    let el: Node | null | undefined = null;
+    if (ch.kind === 'add' || ch.kind === 'replace') el = ch.node.dom;
+    else if (ch.kind === 'text') el = ch.target.dom?.parentElement;
+    else if (ch.kind === 'attrs' || ch.kind === 'move') el = ch.target.dom;
+    if (el && el.nodeType === 1 && !exclude.includes((el as Element).localName)) targets.add(el as Element);
   }
-
-  // 전체 dom 참조 재기록 (F1)
-  recordDom(nextTree, newRootDom);
+  for (const el of targets) {
+    if (typeof (el as Element & { animate?: unknown }).animate !== 'function') continue; // jsdom
+    el.animate([{ backgroundColor: '#fff3a3' }, { backgroundColor: 'transparent' }], { duration: 600 });
+  }
 }

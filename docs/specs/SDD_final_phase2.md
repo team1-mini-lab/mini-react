@@ -1,7 +1,9 @@
 # 미니 React 최종 소프트웨어 설계 문서 — Phase 2 (Component · State · Hooks · Batching · Todo App)
 
-2026-11-10 · **Final v1.1** · 프로젝트 팀 · 기준 요구사항: SRS v1.4 (`docs/SRS_fixed.md`)
+2026-11-10 · **Final v1.2** · 프로젝트 팀 · 기준 요구사항: SRS v1.4 (`docs/SRS_fixed.md`)
 
+> **v1.2 변경 (2026-11-10)**: 구현하며 정한 것을 8장에 적고 7장 1·5번을 해소로 표시. 이 장은 2.1·2.5·3.1·3.2 #4보다 우선한다. 구현·테스트 완료(Phase 2 테스트 53개, 전체 173개 통과).
+>
 > **v1.1 변경 (2026-11-10)**: SRS v1.4 ID 추적표와 VT별 테스트 위치(6장), Todo 페이지를 포함해 React·JSX 0(1.1), Hook 개수 증가 감지(2.4 ①, ADR-0010 HR4와 일치), 설계 검토 필요 항목(7장) 추가. 그 밖의 결정은 바꾸지 않았다.
 >
 > 공통 내용은 `SDD_final_common.md`에 있다.
@@ -413,11 +415,54 @@ export function flushSync(): void {
 
 | # | 항목 | 지금 설계 | 열린 질문 |
 | --- | --- | --- | --- |
-| 1 | 모듈 순환 | `scheduler.ts`가 `currentComponent`(hooks·function-component 쪽)를 읽고, hooks의 setter는 `scheduleUpdate`를 부른다 | 순환 import가 된다. `currentComponent`를 별도 모듈(예: `component/current.ts`)로 뺄지 |
+| 1 | 모듈 순환 | **해소** (8.1) | `component/current.ts`로 분리. depcruise `no-circular` 통과 |
 | 2 | 렌더 중 setter (B6) | 경고 후 다음 microtask로 미룬다 | setter가 `slot.value`를 바로 바꾸므로 지금 렌더의 나머지 부분은 옛 값을 쓴다. 의도한 동작인지 |
 | 3 | (해소) mount 중 effect의 setter | ADR-0009 3절대로 `mount()`에서도 표시를 켠다 (2.5) | — |
 | 4 | effect 실행 순서 | 칸마다 cleanup → effect | React는 모든 cleanup을 먼저 실행한다. 차이를 1.2 "의도된 차이"에 넣을지 |
-| 5 | 이벤트 저장 위치 | `el.__handlers` 또는 `Symbol` | 하나로 정할 것 (테스트가 이 이름에 의존한다) |
+| 5 | 이벤트 저장 위치 | **해소** | `el.__handlers` (Phase 1 `core/patch.ts`와 같은 이름) |
+
+## 8. 구현하며 정한 것 (v1.2)
+
+### 8.1 `component/current.ts` (7장 1번 해소)
+
+- "지금 렌더링 중인 컴포넌트", "자식 컴포넌트 실행 중", "렌더링·effect 실행 중" 표시와 `HookSlot`·`HookHost` 타입을 이 모듈 하나에 둔다.
+- `h`·`hooks`·`scheduler`·`function-component`는 이 모듈만 읽고 서로를 직접 import하지 않는다. 의존 방향: `hooks → scheduler → current`, `function-component → core`, 순환 0.
+- `isRenderingChild()`는 2.1대로 `component/h.ts`에서도 내보낸다.
+
+### 8.2 오류 `TooManyRendersError` (2.5 보완)
+
+- `errors.ts`에 `TooManyRendersError`(메시지 `Too many re-renders`)를 둔다.
+- effect 오류 격리(K14)가 이 오류는 잡지 않고 밖으로 내보낸다. 무한 루프가 `console.error` 한 줄로 묻히지 않게 하기 위해서다 (B4).
+- 던질 때 연쇄 카운터와 예약을 비운다. 그래서 다음 `flushSync()`는 아무것도 하지 않는다.
+
+### 8.3 `flushSync()`는 예약이 없어질 때까지 반복 (2.5 보완)
+
+- effect 안의 setter가 다시 예약하면 그것까지 실행한다. 50회 한계(B4) 안에서 끝난다.
+- 테스트는 클릭 뒤 `flushSync()` 한 번이면 화면과 effect가 모두 끝난 상태를 본다 (B3).
+
+### 8.4 `h()`의 on* 규칙 (2.1 ② 보완, 반례 9 → C11)
+
+- 이름이 `on`(대소문자 무관)으로 시작하는 props는 값이 함수일 때만 `events`에 넣는다.
+- 문자열 등 함수가 아닌 값은 버린다. `attrs`에도 넣지 않는다. ADR-0002 s2가 실제 DOM에서 `on*` 속성을 버리는 것과 같은 이유다.
+
+### 8.5 화면 동등성 불변식의 비교 방법 (4.2 3번 보완, 반례 8)
+
+- `h()`의 글자는 공백 규칙을 거치지 않는다. 그래서 `"  두 칸  "`처럼 공백이 여럿이면 `domToVNode`로 다시 읽은 트리와 글자가 다르다.
+- 불변식은 **두 쪽 모두에 같은 공백 규칙**(공백 묶음 → 한 칸, 공백만 있는 글자 노드 제외)을 적용한 뒤 `equalScreen`으로 비교한다 (`tests/integration/phase2.test.ts`).
+
+### 8.6 Todo 페이지 변경 로그와 디버그 숫자 (3.1 `DebugPanel`, 3.2 #4 보완, TD11)
+
+- `lastChanges`는 Patch가 끝난 뒤에야 생긴다. 그래서 컴포넌트 props로 넘기면 항상 한 박자 늦다.
+- 대신 `render(App, props, container, { onCommit })`의 `onCommit`에서 페이지(`pages/phase2/main.ts`)가 컴포넌트 트리 밖의 `#change-log`에 `formatChange` 한 줄씩 쓴다. Phase 1 페이지의 `#change-log`와 같은 방식이다.
+- `DebugPanel`은 남은 개수(TD9 두 번째 장소), 지금 몇 번째 렌더인지(`renderCount + 1`), `filteredTodos` 계산 횟수만 보여 준다.
+- useEffect 실행 횟수는 effect가 Patch 뒤에 돌기 때문에 `#effect-count`에 `onCommit`이 쓴다.
+- `FilterBar`는 `FilterButton`을 3번 쓴다. `TodoItem`과 함께 FR-13(재사용 3회 이상)을 만족한다.
+
+### 8.7 구현 확인 결과 (2026-11-10)
+
+- `tsc --noEmit`, `eslint src`, `depcruise`(21개 모듈, 순환 0), `check:stack` 통과.
+- Vitest 전체 173개 통과: `h.test` 7, `component.test` 7, `hooks.test` 21, `scheduler.test` 6, `phase2.test` 12.
+- 커버리지(문장): component 99%, core 97%.
 
 ---
 
@@ -435,7 +480,8 @@ export function flushSync(): void {
 | `component/hooks.ts` | `depsChanged(prev, next)` | 이전 목록, 새 목록 | `boolean` | 길이·`Object.is` 비교로 변경 여부 판단 | `ADR-0010` |
 | `component/scheduler.ts` | `scheduleUpdate(c)` | `FunctionComponent` | 없음 | `queueMicrotask` 예약 + 렌더중 경고 + 내부연쇄 50회 제한 | `ADR-0009` |
 | `component/scheduler.ts` | `flushSync()` | 없음 | 없음 | 예약된 `update()` 즉시 동기 실행 (테스트 전용) | `ADR-0009` |
-| `component/errors.ts` | `HookCallError`, `HookOrderError` | 메시지 | Error 객체 | Hook 호출 위치 및 순서 규칙 위반 구분 | `ADR-0010` |
+| `component/current.ts` | `getCurrent`·`setCurrent`·`isRenderingChild`·`isBusy`·`setBusy` | 없음/컴포넌트 | 상태 | 렌더링 중 표시 (8.1) | `ADR-0009`, `ADR-0010` |
+| `component/errors.ts` | `HookCallError`, `HookOrderError`, `TooManyRendersError` | 메시지 | Error 객체 | Hook 호출 위치 및 순서 규칙 위반 구분 | `ADR-0010` |
 | `core/patch.ts` | `mountTree(container, v)` / `syncEvents(el, events)` | 컨테이너·요소, VNode·events | 없음 | 최초 트리 1회 부착 + `recordDom` / 고정 `dispatch` 리스너 `__handlers` 교체 | `ADR-0005`, `0015` |
 | `pages/phase2/App.ts` | `App`, `TodoInput`, `TodoList`, `TodoItem`, `Header`, `FilterBar`, `DebugPanel` | Props | `VElement` | Todo 앱 + 한 줄 `formatChange` 로그 + `input`/`textarea` 제외 하이라이트 | 피드백 06 |
 
