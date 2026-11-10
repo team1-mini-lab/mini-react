@@ -1,0 +1,159 @@
+# 목표: 시스템은 함수형 컴포넌트가 만든 Virtual DOM을 처음 그리고, 상태가 바뀌면 Phase 1의 Diff·Patch로 바뀐 부분만 다시 그려야 한다.
+
+# Optional metadata
+
+status: proposed
+date: 2026-11-10
+decision-makers: [@ksomang]
+consulted: [@hnjee @onekindalpha]
+informed: [이름]
+
+---
+
+# ADR-0015: `h`는 자식 컴포넌트를 바로 펼쳐 ADR-0001 모양의 트리를 만들고, `mount`는 그린 뒤 `dom`을 기록하며, `update`는 Diff·Patch를 쓴다. 이벤트 핸들러는 별도 키 `events`에 둔다
+
+## Context and Problem Statement
+
+Phase 2는 화면을 함수형 컴포넌트로 나누고(C-05), 상태가 바뀌면 화면이 자동으로 다시 그려져야 한다(FR-11). 다시 그릴 때는 Phase 1의 Virtual DOM, Diff, Patch를 그대로 쓴다(C-08).
+
+```
+App 함수 실행 → h(...)들이 Virtual DOM 트리를 만듦
+   ├ 처음 (mount): 트리를 실제 DOM으로 그려서 컨테이너에 붙임
+   └ 상태가 바뀜 (update): App을 다시 실행해 새 트리 → Diff(이전, 새) → Patch
+```
+
+이 흐름을 Phase 1 설계(ADR-0001~0006)와 맞추려면 다음을 정해야 합니다.
+
+1. `h`가 만드는 노드를 ADR-0001 모양과 어떻게 맞출까? (속성 이름, `key`, 자식 정리)
+2. 자식 컴포넌트를 언제 실행할까?
+3. `mount`·`update`가 Phase 1의 `dom` 규칙(ADR-0004)을 어떻게 지킬까?
+4. 이벤트 핸들러(함수)를 노드의 어디에 둘까? `attrs`는 화면 데이터라 `setAttribute`와 값 비교로 처리되는데(ADR-0003·0004), 함수를 넣으면 동작하지 않는다.
+
+## Decision Drivers
+
+- **기존 일관성**: ADR-0001 "키의 세 무리"처럼 성격이 다른 정보를 섞지 않는다.
+- **C-05·C-08**: `FunctionComponent`에 hooks 배열, `mount()`, `update()`를 두고, 다시 그릴 때 Phase 1 Diff·Patch를 그대로 쓴다.
+- **FR-10**: 개발자가 화면 요소를 직접 고치는 코드를 쓰지 않는다.
+- **NFR-01**: 변경 목록 개수로 조작 횟수를 셀 수 있어야 한다.
+- **C-06**: 자식 컴포넌트는 상태 없이 props만 받는 순수 함수다.
+
+## Considered Options
+
+**이벤트 핸들러 위치**
+- e1. `attrs` 안에 함께 둔다: `attrs: { class: "btn", onClick: f }`
+- e2. 별도 선택 키 `events`로 뺀다: `attrs: { class: "btn" }`, `events: { click: f }`
+
+## Decision Outcome
+
+Chosen option: **e2**, because 기존 일관성을 유지하기 위해서다. `attrs`에 함수가 섞이면 렌더링마다 새로 만들어지는 함수 때문에 속성 변경이 매번 잡혀 NFR-01 측정이 부풀고, FR-01 비교에서도 따로 빼야 한다. `events`를 따로 두면 ADR-0001의 `key`, `dom`처럼 화면 데이터와 분리된다.
+
+나머지는 고를 대안이 거의 없는 결정이다(1~4절).
+
+### 1. `h` 함수
+
+`h(tag, props, ...children)` → Virtual DOM 노드 하나
+
+| `tag` | 결과 |
+|---|---|
+| 문자열 | 태그 노드. `tag`는 소문자. `props`의 `key` → `key`, `on`으로 시작하고 값이 함수인 것 → `events`(3절), 나머지 → `attrs`. 자식은 아래 표대로 정리 |
+| 함수(컴포넌트) | 그 함수를 `{ ...props, children }`으로 **바로 실행**하고 결과 노드를 돌려준다. `props`에 `key`가 있으면 컴포넌트 함수에는 넘기지 않고, 돌려받은 루트 노드의 `key`로 붙인다 (2026-11-10 추가) |
+
+**자식 정리 규칙**
+
+| 자식으로 들어오는 값 | 언제 생기나 | 처리 |
+|---|---|---|
+| 문자열 | 글자를 그대로 씀 | 글자 노드 `{ type: "text", text }` |
+| 숫자 | `h("span", null, count)` | 문자열로 바꿔 글자 노드 |
+| 배열 | `todos.map(t => h(TodoItem, ...))` | 펼쳐서 자식 목록에 차례로 넣는다 |
+| `null`, `false`, `undefined` | `isDone && h("span", ...)` | 건너뛴다 |
+| 노드 | `h(...)`의 결과 | 그대로 넣는다 |
+
+- 노드의 속성 키 이름은 `attrs`(ADR-0001)이고, 컴포넌트 함수에 넘기는 입력값은 `props`라고 부른다. 둘은 서로 다른 것이다.
+- `key`를 `attrs`에서 빼는 것은 `dom_to_vdom`이 HTML `key` 속성을 빼는 것(ADR-0002)과 같은 규칙이다.
+- 컴포넌트에 준 `key`(예: `h(TodoItem, { key: todo.id, todo })`)는 컴포넌트를 바로 펼치므로 그대로 두면 사라진다. 그래서 펼친 결과의 루트 노드에 붙인다. 실제 리액트도 `key`를 props로 전달하지 않는다. 목록을 컴포넌트로 그릴 때 Diff가 key로 짝지을 수 있게 하기 위해서다(ADR-0004, #44).
+- 자식 컴포넌트를 바로 펼치므로 완성된 트리에는 함수가 남지 않고, Diff는 Phase 1처럼 태그 노드만 비교한다. 실제 리액트는 컴포넌트 노드를 남겨 두고 나중에 실행하지만, 우리는 C-06이라 자식이 상태를 갖지 않으므로 바로 펼쳐도 잃는 것이 없다.
+
+### 2. `FunctionComponent`의 `mount()`와 `update()`
+
+| 함수 | 순서 |
+|---|---|
+| `mount()` | 컴포넌트 함수 실행 → 트리 → `vdom_to_dom`으로 그려 컨테이너에 붙임 → ADR-0005 2-1절(F1) 방식으로 트리 전체에 `dom` 기록 → 이 트리를 지금 트리로 보관 |
+| `update()` | 컴포넌트 함수 다시 실행 → 새 트리 → `Diff(지금 트리, 새 트리)` → `{ changes, pairs }` → Patch → 새 트리를 지금 트리로 보관 |
+
+- `mount()`가 `dom`을 기록하는 이유: `vdom_to_dom`은 `dom`을 기록하지 않는다(ADR-0004 `dom` 규칙 4). Phase 2는 실제 DOM을 읽지 않고 트리부터 만들므로 Phase 1의 `dom_to_vdom`(기록함) 같은 단계가 없다. 기록하지 않으면 첫 `update()`에서 Patch가 이전 dict의 `dom`을 찾지 못한다.
+- Patch 도중 실패하면 ADR-0005 6절의 복구 함수에 이 컴포넌트의 **컨테이너**를 넘긴다.
+- `unmount()`는 두지 않는다. C-05는 hooks 배열, `mount()`, `update()`만 요구하고, 루트 컴포넌트 하나뿐이라 화면에서 내려갈 일이 없다.
+- Phase 2에서는 State History를 쓰지 않는다.
+
+### 3. 이벤트 (`events`)
+
+| 규칙 | 이유 |
+|---|---|
+| 노드 모양에 선택 키 `events`를 더한다. 값은 `{ 이벤트 이름: 함수 }`. 없으면 키 자체가 없다 (ADR-0001에 추가) | e2 |
+| `h`는 `onClick`처럼 `on`으로 시작하고 값이 함수인 것을 `events.click`으로 옮긴다 (`on`을 떼고 소문자로) | 개발자는 리액트처럼 `onClick`으로 쓰고, 노드 안에서는 화면 데이터와 분리된다 |
+| Diff는 `events`를 비교하지 않고, 변경 목록에도 남기지 않는다 | 렌더링마다 함수가 새로 만들어지므로 비교하면 매번 변경으로 잡힌다. 변경 종류 6가지(ADR-0004)도 그대로다 |
+| FR-01 비교에서 `events`를 보지 않는다 | 화면 데이터가 아니다 |
+| 요소마다 이벤트 종류별로 고정 리스너를 처음 한 번만 붙이고, 그 리스너는 요소에 보관한 "지금 핸들러"를 부른다 | 리스너를 매번 떼고 붙이지 않으므로 DOM 조작이 늘지 않는다 |
+| Patch가 끝나 `dom`을 복사·기록할 때(ADR-0005 D1·F1), 새 dict의 `events`로 그 요소의 "지금 핸들러"를 바꿔 끼운다. 새 dict에 없는 이벤트는 비운다 | 짝이 맞는 노드를 `pairs`가 이미 알고 있다 |
+
+- 실제 리액트는 루트 한 곳에 리스너를 두고 이벤트를 모아 처리한다(이벤트 위임). 요소마다 고정 리스너를 두는 방식이 더 단순해서 이 과제에 맞다.
+
+### Consequences
+
+- Good, because `h`가 만든 트리가 ADR-0001 모양과 같아 Phase 1 Diff·Patch를 그대로 쓴다(C-08).
+- Good, because 이벤트가 화면 데이터와 분리되어, 다시 렌더링해도 핸들러 때문에 변경 목록이 늘지 않는다(NFR-01).
+- Good, because 리스너를 한 번만 붙이고 핸들러만 바꿔 끼우므로 DOM 조작이 늘지 않는다.
+- Good, because 자식 컴포넌트를 바로 펼쳐 구조가 단순하다.
+- Bad, because ADR-0001에 선택 키 `events`가 하나 늘어나고, Patch의 `dom` 복사·기록 단계에 핸들러 바꿔 끼우기가 더해진다.
+- Bad, because 자식 컴포넌트를 바로 펼치므로, 나중에 자식이 상태를 가져야 한다면 구조를 바꿔야 한다. C-06이 이를 금지하므로 이 과제에서는 문제되지 않는다.
+- Neutral, because 이벤트 위임, 컴포넌트 노드 보존 등 실제 리액트와 다른 점이 생긴다. "실제 리액트와의 차이점"(과제 중점 포인트)으로 설명한다.
+
+### Confirmation
+
+| # | 상황 | 기대 결과 | 출처 |
+|---|---|---|---|
+| C1 | `mount()` 후 | 트리의 모든 dict에 `dom`이 있음 | 2절 |
+| C2 | `mount()` 후 상태를 바꾸지 않고 `update()` | `changes` 0개, 실제 DOM 변경 없음 | 2절 |
+| C3 | 상태를 바꾼 뒤 `update()` | Diff·Patch가 각 1회 불리고, 그 밖에 실제 DOM을 바꾸는 코드가 없음 | C-08, FR-10 |
+| C4 | `h("li", { key: "a", class: "x" })` | `key`가 `"a"`, `attrs`가 `{ class: "x" }` | 1절 |
+| C5 | 자식으로 문자열, 숫자, 배열, `null`·`false`를 섞어 `h` 호출 | 1절 자식 정리 규칙대로 정리된 `children` | 1절 |
+| C6 | `h(Child, { name: "kim" })`을 가진 App | 결과 트리에 함수가 없고 `kim` 글자가 있음 | 1절, FR-13 |
+| C7 | `h("button", { onClick: f })` | `events`가 `{ click: f }`, `attrs`에 `onClick` 없음 | 3절 |
+| C8 | 클릭 → 상태 변경 → 다시 렌더링 → 다시 클릭 | 두 번째 클릭에서 새 렌더링의 핸들러가 불림 | 3절 |
+| C9 | 핸들러만 새로 만들어지는 다시 렌더링 | `changes`에 이벤트 관련 기록이 없고, 리스너 추가·제거가 없음 | 3절, NFR-01 |
+| C10 | `update()` 중 Patch 실패 (테스트에서 `dom` 하나 제거) | 컨테이너가 새 트리로 복구됨 | 2절, ADR-0005 6절 |
+
+## Pros and Cons of the Options
+
+### e1. `attrs` 안에 함께 둔다
+
+- Good, because ADR-0001 노드 모양에 키를 더하지 않는다.
+- Good, because 리액트처럼 이벤트와 다른 속성이 한 곳에 있다.
+- Bad, because Patch가 속성마다 "값이 함수인가"를 확인해 나눠 처리해야 한다.
+- Bad, because 렌더링마다 함수가 새로 만들어져 매번 속성 변경으로 잡히고, NFR-01 측정이 부푼다.
+- Bad, because FR-01 비교에서 함수 값을 따로 빼야 하고, 화면 데이터와 동작이 섞인다.
+
+### e2. `events`로 뺀다 (채택)
+
+- Good, because ADR-0001 "키의 세 무리"와 같은 방식으로 화면 데이터와 동작을 분리한다.
+- Good, because `attrs` 처리(ADR-0003·0004)를 바꾸지 않는다.
+- Bad, because 노드 모양에 선택 키가 하나 늘어나 ADR-0001을 고쳐야 한다.
+
+## More Information
+
+### 다른 ADR 변경
+
+| 대상 | 변경 | 상태 |
+|---|---|---|
+| ADR-0001 | 선택 키 `events`, 네 번째 무리 "동작", 비교 표 `events` 열, `events` 규칙 추가 | 팀 재확인 필요 |
+| ADR-0005 6절 | 복구 함수가 컨테이너를 인자로 받도록 일반화 | 팀 재확인 필요 |
+
+### 관련 자료
+
+- 선행 결정: ADR-0001 (노드 모양), ADR-0002 (`key` 분리, `on*` 건너뛰기), ADR-0003 (`vdom_to_dom`), ADR-0004 (Diff·Patch, `dom` 규칙), ADR-0005 (D1·F1, 6절 복구)
+- 검토 대상: SDD.md 3.1, 4.1, 4.2, 4.5, 4.8
+- 설계 과정: [설계 검토 과정 기록 (블로그 99)](https://eutopiaa.tistory.com/99)
+- 요구사항: [미니 리액트 프로젝트 ㅡ 요구사항 정리](https://eutopiaa.tistory.com/90) — 관련 ID: FR-10, FR-11, FR-13, NFR-01, C-05, C-06, C-08
+- 컴포넌트 `key` 규칙 검토 과정: [미니 리액트 개발 일지 ㅡ 팀 설계 검토: Todo 페이지(#44)](https://eutopiaa.tistory.com/102)
+- GitHub Issue: #37, #38
+- 템플릿: [MADR - Full Template](https://adr.github.io/madr/#full-template)
