@@ -90,7 +90,6 @@ export function DebugPanel({ stats, renderNo, memoRuns }: { stats: Stats; render
   return h(
     'aside',
     { id: 'debug', 'data-c': 'DebugPanel' },
-    h('h2', null, '엔진 계기판'),
     h('p', { id: 'debug-remaining' }, `남은 일 ${stats.remaining}개`), // TD9: 같은 값을 두 번째 장소에
     h('p', { id: 'debug-render' }, `🔄 화면 다시 그린 횟수 ${renderNo}`),
     h('p', { id: 'debug-memo' }, `🧮 목록 다시 거른 횟수 ${memoRuns} (useMemo가 건너뛴 횟수 ${renderNo - memoRuns})`),
