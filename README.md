@@ -47,7 +47,7 @@
 - **Phase 1 엔진 재사용**: 다시 그릴 때 Phase 1의 `diff`·`applyPatch`를 **수정 없이** 그대로 사용
 - **Todo 앱**: 위의 `h`·Hooks만으로 만든 테스트 페이지 (React·JSX 0줄)
 
-### 확장 — 성능 실험실 (ADR-0020, 팀 승인 대기)
+### 확장 — 성능 실험실 (ADR-0020)
 
 **[▶ 성능 실험실 열기](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)** — 같은 상품 목록이 바뀔 때 화면을 고치는 방법을 나란히 비교합니다.
 

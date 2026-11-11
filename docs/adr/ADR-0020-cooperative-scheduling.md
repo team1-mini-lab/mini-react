@@ -2,7 +2,7 @@
 
 ---
 # Optional metadata
-status: proposed
+status: accepted
 date: 2026-11-11
 decision-makers: [김은기]
 consulted: [Claude (측정·구현)]
