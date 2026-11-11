@@ -91,7 +91,7 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
       if (dom) dom.textContent = r.created ? `새로 만든 노드 ${r.created.toLocaleString()}` : `DOM 수정 ${r.modified.toLocaleString()}`;
     }
     if (!out) return;
-    const name = { sync: 'Patch (동기)', sliced: 'Patch (협력적 스케줄링)', replace: '통째 교체' }[r.mode];
+    const name = { sync: '부분 렌더링 · 동기식', sliced: '부분 렌더링 · 분할식', replace: '전체 렌더링' }[r.mode];
     out.textContent = [
       `${name} · 항목 ${r.n.toLocaleString()}개 · ${r.scope === 'all' ? '전부 변경' : '1개만 변경'}`,
       `메인 스레드 최장 연속 점유 ${r.longestMs.toFixed(1)}ms ${r.longestMs >= 50 ? '⚠ Long Task(50ms 이상)' : ''}`,
@@ -192,7 +192,7 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
   // 세 방식을 같은 출발 상태에서 차례로 실행해 카드에 나란히 보여 준다
   async function compare(): Promise<RunResult[]> {
     const results: RunResult[] = [];
-    for (const m of ['sync', 'sliced', 'replace'] as Mode[]) {
+    for (const m of ['replace', 'sync', 'sliced'] as Mode[]) {
       reset(n, scope);
       const r = await update(m);
       if (r) results.push(r);
@@ -201,8 +201,8 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
     const [sy, sl] = [results.find((r) => r.mode === 'sync'), results.find((r) => r.mode === 'sliced')];
     if (v && sy && sl) {
       v.textContent = sy.longestMs >= 50 && sl.longestMs < 50
-        ? `결론: 나눠서 하면 화면이 멈추는 시간이 ${sy.longestMs.toFixed(0)}ms → ${sl.longestMs.toFixed(0)}ms. 대신 끝나는 데는 조금 더 걸림`
-        : `이 크기에선 셋 다 50ms 안에 끝남 → 나눌 필요 없음. 1만 개로 해 보세요`;
+        ? `결론: 분할식으로 하면 화면이 멈추는 시간이 ${sy.longestMs.toFixed(0)}ms → ${sl.longestMs.toFixed(0)}ms. 대신 끝나는 데는 조금 더 걸림`
+        : `이 크기에선 셋 다 50ms 안에 끝남 → 나눌 필요 없음. 1만 종목으로 해 보세요`;
     }
     return results;
   }

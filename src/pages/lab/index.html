@@ -23,23 +23,23 @@
       </section>
 
       <section class="cards">
-        <article class="card" id="card-sync">
-          <h2>Patch</h2><p class="sub">바뀐 곳만 · 한 번에</p>
+        <article class="card" id="card-replace">
+          <h2>🔁 전체 렌더링</h2><p class="sub">innerHTML · Virtual DOM 없음 (비교 기준)</p>
           <div class="meter"><div class="fill"></div><div class="limit"></div></div>
           <p class="ms">—</p><p class="dom">—</p>
-          <p class="pc"><span class="p">✅ 입력값 유지</span><span class="c">⚠ 구현 복잡</span></p>
+          <p class="pc"><span class="p">✅ 코드 단순</span><span class="c">⚠ 입력값·스크롤 사라짐</span></p>
+        </article>
+        <article class="card" id="card-sync">
+          <h2>✏️ 부분 렌더링 · 동기식</h2><p class="sub">Virtual DOM + Diff (과제 구현)</p>
+          <div class="meter"><div class="fill"></div><div class="limit"></div></div>
+          <p class="ms">—</p><p class="dom">—</p>
+          <p class="pc"><span class="p">✅ 입력값 유지</span><span class="c">⚠ 비교 비용</span></p>
         </article>
         <article class="card" id="card-sliced">
-          <h2>Patch + 나눠서</h2><p class="sub">5ms씩 쉬면서</p>
+          <h2>⏸️ 부분 렌더링 · 분할식</h2><p class="sub">Time Slicing (우리 확장)</p>
           <div class="meter"><div class="fill"></div><div class="limit"></div></div>
           <p class="ms">—</p><p class="dom">—</p>
-          <p class="pc"><span class="p">✅ 화면 안 멈춤</span><span class="c">⚠ 전체 시간 ↑</span></p>
-        </article>
-        <article class="card" id="card-replace">
-          <h2>통째 교체</h2><p class="sub">innerHTML 방식</p>
-          <div class="meter"><div class="fill"></div><div class="limit"></div></div>
-          <p class="ms">—</p><p class="dom">—</p>
-          <p class="pc"><span class="p">✅ 코드 단순</span><span class="c">⚠ 입력값 사라짐</span></p>
+          <p class="pc"><span class="p">✅ 화면 안 멈춤</span><span class="c">⚠ 끝나는 건 조금 늦음</span></p>
         </article>
       </section>
       <p id="lab-verdict" class="verdict">▶ 비교 실행을 눌러 보세요</p>
