@@ -5,6 +5,8 @@
 [![verify](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml)
 [![pages](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml)
 
+![TypeScript](https://img.shields.io/badge/TypeScript-6_strict-3178C6?style=flat-square&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white) ![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?style=flat-square&logo=vitest&logoColor=white) ![jsdom](https://img.shields.io/badge/jsdom-DOM_test-F7DF1E?style=flat-square&logo=javascript&logoColor=white) ![ESLint](https://img.shields.io/badge/ESLint-10-4B32C3?style=flat-square&logo=eslint&logoColor=white) ![dependency-cruiser](https://img.shields.io/badge/dependency--cruiser-no_cycles-0A7EA4?style=flat-square) ![Stryker](https://img.shields.io/badge/Stryker-mutation-E74C3C?style=flat-square&logo=stryker&logoColor=white) ![fast-check](https://img.shields.io/badge/fast--check-property-8E44AD?style=flat-square) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI-2088FF?style=flat-square&logo=githubactions&logoColor=white) ![UI framework](https://img.shields.io/badge/UI_framework-0-111111?style=flat-square)
+
 **▶ 데모: https://team1-mini-lab.github.io/mini-react/** — [Phase 1 검증 페이지](https://team1-mini-lab.github.io/mini-react/src/pages/phase1/index.html) · [Phase 2 Todo 앱](https://team1-mini-lab.github.io/mini-react/src/pages/phase2/index.html) · [성능 실험실](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)
 
 **📋 [최신 검증 보고서](https://github.com/team1-mini-lab/mini-react/blob/verify-report/REPORT.md)** — push할 때마다 CI가 새로 만듭니다
@@ -82,7 +84,7 @@ SRS는 v1.1 → v1.8로 개정됐습니다. 설계 검토에서 찾은 반례와
 
 ---
 
-## 구조
+## 구조 (폴더 의존 방향)
 
 ```mermaid
 flowchart LR
@@ -151,7 +153,15 @@ flowchart LR
 
 ## 어떻게 검증했나
 
-![검증 루프](docs/images/verify-loop.png)
+<details>
+<summary><b>검증 프로세스 그림</b> — 사람이 정하고 · AI가 만들고 · 기계가 확인한다</summary>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/verify-loop-dark.png">
+  <img alt="AI 에이전트와 협업하는 검증 프로세스" src="docs/images/verify-loop.png">
+</picture>
+
+</details>
 
 "테스트가 통과한다"를 넘어, **요구사항 하나하나가 설계·코드·테스트로 이어지는지**를 기계가 확인하게 만들었습니다. 표준은 IEEE 1012(V&V), ISO/IEC/IEEE 29148(요구사항), IEEE 1016(설계 기술)을 참고했습니다.
 
@@ -190,8 +200,6 @@ npm run dev          # http://localhost:5173 → Phase 1 · Phase 2 · 성능 �
 | `npm run test:mutation` | Stryker 뮤테이션 테스트 (약 10분) |
 | `npm run verify` | 타입 검사 + 기술 스택 + 의존 방향 + lint + 문서 정합성 + 테스트 |
 | `npm run report` | 위 전부를 돌려 `report/REPORT.md`(G1~G4, 정합성 사슬, VT 51개 증거) 생성 |
-
-**기술 스택**: TypeScript 6 (strict) · Vite 8 · Vitest 5 · jsdom · ESLint 10 + typescript-eslint · dependency-cruiser · Stryker · fast-check · GitHub Actions. UI 프레임워크는 쓰지 않습니다.
 
 ---
 
