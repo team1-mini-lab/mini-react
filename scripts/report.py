@@ -43,10 +43,10 @@ def sh(cmd, name, timeout=600):
     return {"rc": rc, "out": out, "sec": round(time.time() - t, 1), "log": f"report/{name}.txt"}
 
 
-def npm(script, name=None, extra=""):
+def npm(script, name=None, extra="", timeout=600):
     if script not in PKG:
         return {"rc": None, "out": "", "sec": 0, "log": None}
-    return sh(f"npm run -s {script} {extra}".strip(), name or script.replace(":", "-"))
+    return sh(f"npm run -s {script} {extra}".strip(), name or script.replace(":", "-"), timeout)
 
 
 def read(p):
@@ -75,7 +75,7 @@ R["lint"] = npm("lint")
 R["test"] = sh("npx vitest run --reporter=default --reporter=json --outputFile=report/vitest.json", "test")
 R["coverage"] = npm("test:coverage")
 # 로컬 기기처럼 한 번 실행 시간이 짧으면 파일별로 나눠 돌린 결과를 합친다 (MUTATION_REUSE=1, scripts/merge_mutation.py)
-R["mutation"] = sh("python3 scripts/merge_mutation.py", "mutation") if os.environ.get("MUTATION_REUSE") else npm("test:mutation")
+R["mutation"] = sh("python3 scripts/merge_mutation.py", "mutation") if os.environ.get("MUTATION_REUSE") else npm("test:mutation", timeout=2400)  # 뮤테이션은 코드·테스트가 늘수록 오래 걸린다 (CI 약 10~15분)
 os.environ["VT_SCRIPT_PASS"] = ",".join(v for v, ok in (("VT-23", R["check_stack"]["rc"] == 0), ("VT-35", R["test"]["rc"] == 0), ("VT-22", R["lint"]["rc"] == 0 and R["check_arch"]["rc"] == 0)) if ok)  # VT-35: jsdom 스위트 통과
 R["check_vt"] = sh("python3 scripts/check_vt_tests.py --quiet --results report/vitest.json --json report/vt.json", "check-vt")
 R["check_trace"] = sh("python3 scripts/check_trace.py --results report/vitest.json --json report/trace.json", "check-trace")
