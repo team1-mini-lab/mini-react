@@ -41,3 +41,7 @@ details { margin-top: 20px; color: var(--muted); font-size: 14px; }
 #lab-result { white-space: pre-wrap; font: 12px/1.5 ui-monospace, Menlo, monospace; }
 #lab-root { max-height: 240px; overflow: auto; font-size: 12px; }
 .verdict { text-align: center; font-size: 18px; font-weight: 700; margin: 16px 0 0; }
+.track { position: relative; height: 34px; background: #efefea; border-radius: 999px; margin: 6px auto 14px; max-width: 520px; overflow: hidden; }
+.ball { position: absolute; top: 5px; left: 5px; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); }
+#lab-stutter.slow { color: var(--bad); }
+#lab-input { font-size: 15px; margin-top: 10px; }

@@ -10,14 +10,14 @@
     <main class="wrap">
       <a class="back" href="../../../index.html">← 처음으로</a>
       <h1>⚡ 성능 실험실</h1>
-      <p class="lead">같은 목록을 세 방식으로 바꿔 봅니다</p>
+      <p class="lead">📈 실시간 주식 시세판 — 시세가 바뀔 때 화면을 어떻게 고칠까?</p>
 
       <section class="bar-controls">
         <div class="seg" data-name="size">
-          <button data-v="1000" class="on">1천 개</button><button data-v="10000">1만 개</button><button data-v="30000">3만 개</button>
+          <button data-v="1000" class="on">1천 종목</button><button data-v="10000">1만 종목</button><button data-v="30000">3만 종목</button>
         </div>
         <div class="seg" data-name="scope">
-          <button data-v="one" class="on">1개만 바꾸기</button><button data-v="all">전부 바꾸기</button>
+          <button data-v="one" class="on">1종목 시세 변경</button><button data-v="all">전 종목 시세 변경</button>
         </div>
         <button id="lab-compare" class="run">▶ 비교 실행</button>
       </section>
@@ -45,20 +45,9 @@
       <p id="lab-verdict" class="verdict">▶ 비교 실행을 눌러 보세요</p>
       <p class="legend">막대 = 화면이 멈춘 최장 시간 · <span class="red">빨간 선 50ms</span> 넘으면 클릭·입력이 밀림</p>
 
-      <section class="typing">
-        <h2>⌨️ 직접 느껴 보기</h2>
-        <p class="sub">1만 개로 바꾸고 → 버튼 누르고 → 바로 타이핑</p>
-        <div class="row">
-          <button data-auto="sync">Patch로 3초</button>
-          <button data-auto="sliced">나눠서 3초</button>
-        </div>
-        <input id="lab-input" type="text" placeholder="여기에 타이핑…" />
-        <p class="lag"><b id="lab-lag-num">0</b> ms <span id="lab-lag">입력 지연 (최대)</span></p>
-        <p id="lab-longtask" class="tiny"></p>
-      </section>
 
       <details>
-        <summary>실험 중인 목록 보기</summary>
+        <summary>시세판 보기</summary>
         <pre id="lab-result"></pre>
         <div id="lab-root"></div>
       </details>

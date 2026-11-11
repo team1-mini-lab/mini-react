@@ -27,8 +27,18 @@ export interface RunResult {
 }
 
 /** 목록: version이 바뀌면 scope에 따라 첫 항목만 또는 전부 글자가 바뀐다 */
+const NAMES = ['삼성전자', 'SK하이닉스', 'LG에너지솔루션', '현대차', 'NAVER', '카카오', '셀트리온', '기아', 'POSCO홀딩스', 'KB금융'];
+
+/** 실시간 시세판: 종목 n개. version(시세 갱신 회차)이 바뀌면 scope에 따라 첫 종목만 또는 전 종목 가격이 바뀐다 */
 export function buildList(n: number, version: number, scope: Scope): VElement {
-  return h('ul', { id: 'lab-list' }, ...Array.from({ length: n }, (_, i) => h('li', { key: String(i) }, `항목 ${i} · v${scope === 'all' || i === 0 ? version : 0}`)));
+  return h('ul', { id: 'lab-list' }, ...Array.from({ length: n }, (_, i) => {
+    const v = scope === 'all' || i === 0 ? version : 0;
+    const base = 10000 + ((i * 7919) % 90000);
+    const move = (((i + 1) * (v + 3) * 37) % 41) - 20; // -20 ~ +20 (‰)
+    const price = Math.round((base * (1000 + move)) / 1000) + v * 10; // 회차마다 반드시 값이 달라진다
+    const name = `${NAMES[i % NAMES.length]}${i >= NAMES.length ? ` ${Math.floor(i / NAMES.length)}` : ''}`;
+    return h('li', { key: String(i) }, `${name} · ${price.toLocaleString()}원 ${move >= 0 ? '▲' : '▼'}${(Math.abs(move) / 10).toFixed(1)}%`);
+  }));
 }
 
 const subtree = (node: Node): number => {
@@ -161,11 +171,18 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
   function auto(mode: Mode): void {
     if (timer) clearInterval(timer);
     maxLag = 0;
+    worst = 0;
+    measuring = true;
+    if (n < 10000) {
+      reset(10000, 'all'); // 차이가 보이도록 1만 개·전부 변경으로 맞춘다
+      doc.querySelectorAll('.seg button').forEach((b) => b.classList.toggle('on', ['10000', 'all'].includes((b as HTMLElement).dataset.v ?? '')));
+    }
     const until = now() + 3000;
     timer = setInterval(() => {
       if (now() > until && timer) {
         clearInterval(timer);
         timer = null;
+        measuring = false;
         return;
       }
       void update(mode);
@@ -209,8 +226,38 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
   });
   doc.querySelectorAll<HTMLElement>('[data-auto]').forEach((b) => b.addEventListener('click', () => {
     auto(b.dataset.auto as Mode);
-    (doc.getElementById('lab-input') as HTMLInputElement | null)?.focus();
   }));
+
+  // 움직이는 공: requestAnimationFrame으로 매 프레임 자바스크립트가 위치를 옮긴다.
+  // 메인 스레드가 바쁘면 프레임이 밀려 공이 멈춘다 → 멈춘 시간을 잰다 (CSS 애니메이션은 따로 돌 수 있어서 쓰지 않음)
+  const ball = doc.getElementById('lab-ball');
+  const stutter = doc.getElementById('lab-stutter');
+  let worst = 0;
+  let measuring = false;
+  if (ball && typeof requestAnimationFrame === 'function') {
+    let last = now();
+    let x = 0;
+    let dir = 1;
+    const tick = () => {
+      const t = now();
+      const gap = t - last;
+      last = t;
+      if (measuring && gap > worst) {
+        worst = gap;
+        if (stutter) {
+          stutter.textContent = `${worst.toFixed(0)}ms`;
+          stutter.classList.toggle('slow', worst >= 50);
+        }
+      }
+      const width = (ball.parentElement?.clientWidth ?? 300) - 34;
+      x += dir * gap * 0.35;
+      if (x > width) { x = width; dir = -1; }
+      if (x < 0) { x = 0; dir = 1; }
+      ball.style.transform = `translateX(${x}px)`;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
 
   // Long Task 관찰 (Chrome 등 지원 브라우저만)
   const lt = doc.getElementById('lab-longtask');
