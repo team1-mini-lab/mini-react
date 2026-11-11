@@ -5,13 +5,16 @@
 [![verify](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml)
 [![pages](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml)
 
-**▶ 데모: https://team1-mini-lab.github.io/mini-react/** — Phase 1 검증 페이지 · Phase 2 Todo 앱 · 성능 실험실
+**▶ 데모: https://team1-mini-lab.github.io/mini-react/**
+
+| [🧩 Phase 1 검증 페이지](https://team1-mini-lab.github.io/mini-react/src/pages/phase1/index.html) | [✅ Phase 2 Todo 앱](https://team1-mini-lab.github.io/mini-react/src/pages/phase2/index.html) | [⚡ 성능 실험실](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html) | [📋 최신 검증 결과](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml) |
+|:---:|:---:|:---:|:---:|
 
 | 테스트 | VT(검증 항목) | 요구사항 추적 | 뮤테이션 점수 | 커버리지 (core · component) | 외부 UI 프레임워크 |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 | **202 / 202** | **51 / 51** | **44 / 44** | **85.7%** | **97% · 99%** | **0** |
 
-> 숫자는 모두 `scripts/report.py`가 명령 결과로 만든 [검증 보고서](docs/verification/runs/2026-11-11-final-report.md)에서 나온 값입니다. push·PR마다 CI가 다시 계산해 PR 댓글로 올립니다.
+> 숫자는 `scripts/report.py`가 명령 결과로 만든 [검증 보고서 (2026-11-11 스냅샷)](docs/verification/runs/2026-11-11-final-report.md)의 값입니다. **최신 결과**는 push·PR마다 CI가 다시 계산해 [GitHub Actions의 verify 실행](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml)(각 실행의 Summary)과 PR 댓글에 올립니다.
 
 ---
 
