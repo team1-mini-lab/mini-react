@@ -5,11 +5,11 @@
 [![verify](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml)
 [![pages](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml)
 
-**▶ 데모: https://team1-mini-lab.github.io/mini-react/** — Phase 1 검증 페이지 · Phase 2 Todo 앱
+**▶ 데모: https://team1-mini-lab.github.io/mini-react/** — Phase 1 검증 페이지 · Phase 2 Todo 앱 · 성능 실험실
 
 | 테스트 | VT(검증 항목) | 요구사항 추적 | 뮤테이션 점수 | 커버리지 (core · component) | 외부 UI 프레임워크 |
 |:---:|:---:|:---:|:---:|:---:|:---:|
-| **199 / 199** | **51 / 51** | **44 / 44** | **85.7%** | **97% · 99%** | **0** |
+| **202 / 202** | **51 / 51** | **44 / 44** | **85.7%** | **97% · 99%** | **0** |
 
 > 숫자는 모두 `scripts/report.py`가 명령 결과로 만든 [검증 보고서](docs/verification/runs/2026-11-11-final-report.md)에서 나온 값입니다. push·PR마다 CI가 다시 계산해 PR 댓글로 올립니다.
 
@@ -44,12 +44,23 @@
 - **Phase 1 엔진 재사용**: 다시 그릴 때 Phase 1의 `diff`·`applyPatch`를 **수정 없이** 그대로 사용
 - **Todo 앱**: 위의 `h`·Hooks만으로 만든 테스트 페이지 (React·JSX 0줄)
 
-### 확장 — 협력적 스케줄링과 성능 실험실 (ADR-0020, 팀 승인 대기)
+### 확장 — 성능 실험실 (ADR-0020, 팀 승인 대기)
 
-- **문제**: 렌더링이 동기라 목록이 크면 메인 스레드를 오래 잡는다 (jsdom 측정: 10,000개에서 Diff 약 43ms + Commit 약 57ms)
-- **개선**: Diff를 노드 단위 작업(generator)으로 바꿔 `diffSliced()`가 5ms씩 나눠 실행하고 `MessageChannel`로 양보한다. 새 업데이트가 오면 앞 작업을 버리고 최신 상태로 다시 시작한다. 실제 DOM에 반영하는 Commit은 나누지 않는다
-- **증명**: 무작위 트리 300쌍에서 동기 Diff와 결과가 같음(fast-check). [성능 실험실](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)에서 동기·협력적·통째 교체를 나란히 돌려 최장 연속 점유(Long Task), 입력 지연, DOM 노드 수를 비교한다
-- **한계도 그대로 보여 준다**: Commit은 여전히 동기이고, 전부 바뀌는 변경이면 Patch도 모든 노드를 고친다
+**[▶ 성능 실험실 열기](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)** — 같은 상품 목록이 바뀔 때 화면을 고치는 방법을 나란히 비교합니다.
+
+| 방식 | 하는 일 | 상품 1만 개 · 전부 변경 (Chromium 측정) | 장점 / 단점 |
+|---|---|---|---|
+| 🔁 전체 렌더링 (비교 기준) | Virtual DOM 없이 매번 전부 새로 만듦 (`innerHTML`) | 새로 만든 노드 2만 개 | 코드 단순 / 입력값·스크롤 사라짐 |
+| ✏️ 부분 렌더링 · 동기식 (**과제 구현**) | Virtual DOM으로 비교해 바뀐 곳만 고침, 한 번에 끝까지 | 화면 멈춤 약 **69ms** (50ms 넘으면 클릭·입력 밀림) | 입력값 유지 / 비교 비용 |
+| ⏸️ 부분 렌더링 · 분할식 (**우리 확장**) | 비교를 5ms 조각으로 나눠 사이사이 브라우저에 양보 (Time Slicing) | 화면 멈춤 약 **7ms** | 화면 안 멈춤 / 끝나는 건 조금 늦음 |
+| 👀 보이는 만큼만 (비교 줄이기) | 10만 개 중 화면에 보이는 줄만 Virtual DOM으로 만들고 스크롤 때 그 줄만 비교 | DOM 약 15줄, 스크롤 한 번에 바뀐 노드 몇 개 | 데이터가 많아도 가벼움 / 줄 높이가 일정해야 함 |
+| 🎯 바로 고치기 (비교 없애기) | Signals: 값과 화면 칸의 연결을 미리 기억해 그 칸만 고침 (별도 데모) | 1천 개 중 가격 하나: Virtual DOM 비교 2천여 개 vs **비교 0**, DOM 수정은 둘 다 1 | 비교 비용 없음 / 연결 목록을 메모리에 들고 있어야 함 |
+
+- **1개만 바꾸면** 부분 렌더링은 DOM 수정 1번, 전체 렌더링은 노드 2만 개를 새로 만듭니다.
+- **전부 바꾸면** 비교 비용 때문에 전체 렌더링이 더 빠를 수도 있습니다. Virtual DOM의 목적은 "가장 빠른 것"이 아니라, 개발자가 상태만 바꾸면 바뀐 곳을 알아서 고쳐 주는 것입니다. 가장 빠른 건 손으로 그 칸만 고치는 것이지만, 화면이 커질수록 고칠 곳을 사람이 다 기억해야 해서 실수가 늘어납니다.
+- **비교 비용을 줄이는 방법**: 보이는 만큼만(위 실험), 안 바뀐 컴포넌트 건너뛰기(React `memo`), 아예 비교하지 않기(Svelte·Solid의 Signals: 값과 화면 칸의 연결을 미리 기억해 그 칸만 고침).
+- **분할식 구현**: Diff를 노드 하나씩 멈췄다 이어 할 수 있는 작업(generator)으로 바꿔 `diffSliced()`가 5ms씩 실행하고 `MessageChannel`로 양보합니다. 새 업데이트가 오면 앞 작업은 버리고 최신 상태로 다시 시작합니다. 실제 DOM에 반영하는 단계(Commit)는 나누지 않습니다. 동기 Diff와 결과가 같다는 것을 무작위 트리 300쌍으로 확인했습니다(fast-check).
+- 시간은 기계마다 달라 보여 주기만 하고, 자동 테스트는 결과 화면과 DOM 노드 수로 판정합니다.
 
 ---
 
@@ -104,7 +115,7 @@ flowchart LR
 "테스트가 통과한다"를 넘어, **요구사항 하나하나가 설계·코드·테스트로 이어지는지**를 기계가 확인하게 만들었습니다. 표준은 IEEE 1012(V&V), ISO/IEC/IEEE 29148(요구사항), IEEE 1016(설계 기술)을 참고했습니다.
 
 ```
-SRS(ID 106개) → ADR(결정 19개) → SDD(설계) → 코드(src) → VT(검증 항목 49개) → 테스트 199개
+SRS(요구사항) → ADR(결정 20개) → SDD(설계) → 코드(src) → VT(검증 항목 51개) → 테스트 202개
 ```
 
 | 관문 | 확인하는 것 | 도구 |
@@ -128,16 +139,16 @@ SRS(ID 106개) → ADR(결정 19개) → SDD(설계) → 코드(src) → VT(검�
 
 ```bash
 npm install --legacy-peer-deps
-npm run dev          # http://localhost:5173 → Phase 1 / Phase 2 링크
+npm run dev          # http://localhost:5173 → Phase 1 · Phase 2 · 성능 실험실
 ```
 
 | 명령 | 하는 일 |
 |---|---|
-| `npm test` | Vitest 199개 (jsdom) |
+| `npm test` | Vitest 202개 (jsdom) |
 | `npm run test:coverage` | 커버리지 (core·component 90% 미만이면 실패) |
 | `npm run test:mutation` | Stryker 뮤테이션 테스트 (약 10분) |
 | `npm run verify` | 타입 검사 + 기술 스택 + 의존 방향 + lint + 문서 정합성 + 테스트 |
-| `npm run report` | 위 전부를 돌려 `report/REPORT.md`(G1~G4, 정합성 사슬, VT 49개 증거) 생성 |
+| `npm run report` | 위 전부를 돌려 `report/REPORT.md`(G1~G4, 정합성 사슬, VT 51개 증거) 생성 |
 
 **기술 스택**: TypeScript 6 (strict) · Vite 8 · Vitest 5 · jsdom · ESLint 10 + typescript-eslint · dependency-cruiser · Stryker · fast-check · GitHub Actions. UI 프레임워크는 쓰지 않습니다.
 
@@ -147,14 +158,14 @@ npm run dev          # http://localhost:5173 → Phase 1 / Phase 2 링크
 
 ```
 src/
-  core/         Virtual DOM 엔진: vnode · dom · html · diff · patch · history
+  core/         Virtual DOM 엔진: vnode · dom · html · diff · patch · history · slice(분할식 Diff)
   component/    미니 React: h · hooks · scheduler · function-component
-  pages/        테스트 페이지: phase1(검증 페이지) · phase2(Todo 앱)
+  pages/        테스트 페이지: phase1(검증 페이지) · phase2(Todo 앱) · lab(성능 실험실)
 tests/          unit · integration · helpers
 scripts/        검증 하네스: check_docs · check_trace · check_vt_tests · check_stack · report · merge_mutation
 docs/
   SRS_fixed.md  요구사항 명세 (FR·NFR·IR·CON·VT)
-  adr/          설계 결정 기록 ADR-0001~0019
+  adr/          설계 결정 기록 ADR-0001~0020 (superseded/는 다른 ADR로 대체된 옛 결정)
   specs/        설계서 SDD_final_phase1 · phase2 · common
   verification/ 체크리스트, 설계 검토 결과와 판정, 검증 보고서
 ```
@@ -163,10 +174,25 @@ docs/
 
 ## 팀
 
-| 이름 | 주요 기여 |
+설계는 ADR로 나눠 맡고, 모든 결정은 팀 설계 검토와 PR 리뷰를 거쳐 함께 승인했습니다.
+
+| 이름 | 맡은 부분 |
 |---|---|
-| 김소망 | Phase 1 핵심 설계 결정 ADR-0001~0006(Virtual DOM 노드, DOM 변환, Diff·Patch, 테스트 영역)과 Phase 2 ADR-0015(컴포넌트 렌더링·이벤트) 작성, 팀 설계 검토(피드백 01~06) |
-| 김은기 (velocitygoal) | ADR-0007~0014(언어, History, Batching, Hooks, 테스트·설계 하네스 등) 작성, 하네스 반례 판정으로 ADR-0016~0019 도출, 요구사항(SRS)·최종 설계서(SDD) 정리, Phase 1·2 구현과 테스트 199개, 검증 하네스·CI 보고서·뮤테이션 테스트 |
+| 김소망 | Phase 1 핵심 설계(ADR-0001~0006: Virtual DOM 노드, DOM 변환, Diff·Patch, 테스트 영역), Phase 2 컴포넌트 렌더링(ADR-0015), 팀 설계 검토 진행 |
+| 김은기 | History·Batching·Hooks·하네스 설계(ADR-0007~0014), 설계 반례 판정(ADR-0016~0019), Phase 1·2 구현과 검증 하네스 |
 | Hyunji Lee | 저장소 구성, 설계 결정 검토 |
 
-설계 과정 기록: [미니 리액트 개발 일지](https://eutopiaa.tistory.com/90)
+## 다른 팀과 다르게 더한 것
+
+과제 요구사항(Virtual DOM·Diff·Patch, Component·State·Hooks, 테스트 페이지)은 모두 구현했고, 여기에 더해:
+
+| 무엇 | 어디서 보나 |
+|---|---|
+| 바뀐 곳 하이라이트, 이전·새 트리 보기, key 있음·없음 비교 | Phase 1 페이지 |
+| 분할 렌더링(Time Slicing)으로 큰 목록에서도 화면이 멈추지 않게 | 성능 실험실 |
+| 보이는 만큼만 비교(가상 스크롤): 데이터 10만 개를 DOM 15줄로 | 성능 실험실 |
+| 바로 고치기(Signals): 비교 0번으로 바뀐 칸만 고치는 방식과 Virtual DOM 비교 | 성능 실험실 |
+| 요구사항 → 설계 → 코드 → 테스트를 잇는 검증 하네스, push마다 PR에 보고서 | GitHub Actions |
+| 구현 전에 설계를 반례로 검증, 뮤테이션 테스트로 테스트 빈틈 확인 | `docs/verification/` |
+
+**비교 비용이 아예 없는 방식**: Virtual DOM은 바뀐 곳을 찾으려고 매번 비교합니다. Svelte·SolidJS·Vue가 쓰는 **Signals**는 "이 값은 이 칸에 쓰인다"는 연결을 처음에 기억해 두고, 값이 바뀌면 그 칸만 바로 고쳐서 비교 자체를 하지 않습니다. 성능 실험실의 "🎯 바로 고치기"에서 직접 비교할 수 있습니다 (우리 엔진은 그대로 두고 별도 데모로 구현).

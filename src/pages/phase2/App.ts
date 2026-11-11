@@ -32,13 +32,13 @@ export const INITIAL_TODOS: Todo[] = [
 // ---- 자식 컴포넌트: 모두 순수 함수 ----
 
 export function Header({ stats }: { stats: Stats }): VElement {
-  return h('header', { class: 'todo-header' }, h('h1', null, '할 일 목록'), h('p', { id: 'remaining' }, `남은 일 ${stats.remaining}개 / 전체 ${stats.total}개`));
+  return h('header', { class: 'todo-header', 'data-c': 'Header' }, h('h1', null, '할 일 목록'), h('p', { id: 'remaining' }, `남은 일 ${stats.remaining}개 / 전체 ${stats.total}개`));
 }
 
 export function TodoInput(props: { value: string; onInput: (v: string) => void; onAdd: () => void; onAddThree: () => void }): VElement {
   return h(
     'div',
-    { class: 'todo-input' },
+    { class: 'todo-input', 'data-c': 'TodoInput' },
     h('input', {
       id: 'todo-text',
       type: 'text',
@@ -55,7 +55,7 @@ export function TodoInput(props: { value: string; onInput: (v: string) => void; 
 }
 
 function FilterButton({ value, label, active, onChange }: { value: Filter; label: string; active: boolean; onChange: (f: Filter) => void }): VElement {
-  return h('button', { type: 'button', class: active ? 'filter active' : 'filter', 'data-filter': value, onClick: () => onChange(value) }, label);
+  return h('button', { type: 'button', class: active ? 'filter active' : 'filter', 'data-filter': value, 'data-c': 'FilterButton', onClick: () => onChange(value) }, label);
 }
 
 export function FilterBar({ filter, onChange }: { filter: Filter; onChange: (f: Filter) => void }): VElement {
@@ -64,13 +64,13 @@ export function FilterBar({ filter, onChange }: { filter: Filter; onChange: (f: 
     ['active', '진행'],
     ['done', '완료'],
   ];
-  return h('nav', { class: 'filters' }, items.map(([value, label]) => h(FilterButton, { key: value, value, label, active: filter === value, onChange })));
+  return h('nav', { class: 'filters', 'data-c': 'FilterBar' }, items.map(([value, label]) => h(FilterButton, { key: value, value, label, active: filter === value, onChange })));
 }
 
 export function TodoItem({ todo, onToggle, onRemove }: { todo: Todo; onToggle: (id: number) => void; onRemove: (id: number) => void }): VElement {
   return h(
     'li',
-    { class: todo.done ? 'todo done' : 'todo' },
+    { class: todo.done ? 'todo done' : 'todo', 'data-c': 'TodoItem' },
     h('input', { type: 'checkbox', class: 'toggle', checked: todo.done, onChange: () => onToggle(todo.id) }), // TD5
     h('span', { class: 'text' }, todo.text),
     h('button', { type: 'button', class: 'remove', onClick: () => onRemove(todo.id) }, '삭제'),
@@ -80,7 +80,7 @@ export function TodoItem({ todo, onToggle, onRemove }: { todo: Todo; onToggle: (
 export function TodoList({ todos, onToggle, onRemove }: { todos: Todo[]; onToggle: (id: number) => void; onRemove: (id: number) => void }): VElement {
   return h(
     'ul',
-    { id: 'todo-list' },
+    { id: 'todo-list', 'data-c': 'TodoList' },
     todos.map((todo) => h(TodoItem, { key: todo.id, todo, onToggle, onRemove })), // TD1·TD2: key는 <li>로, props에는 없다
     todos.length === 0 && h('li', { class: 'empty' }, '할 일이 없습니다'),
   );
@@ -89,10 +89,11 @@ export function TodoList({ todos, onToggle, onRemove }: { todos: Todo[]; onToggl
 export function DebugPanel({ stats, renderNo, memoRuns }: { stats: Stats; renderNo: number; memoRuns: number }): VElement {
   return h(
     'aside',
-    { id: 'debug' },
-    h('h2', null, '디버그'),
+    { id: 'debug', 'data-c': 'DebugPanel' },
+    h('h2', null, '엔진 계기판'),
     h('p', { id: 'debug-remaining' }, `남은 일 ${stats.remaining}개`), // TD9: 같은 값을 두 번째 장소에
-    h('p', { id: 'debug-render' }, `렌더 ${renderNo}번째 · filteredTodos 계산 ${memoRuns}회`),
+    h('p', { id: 'debug-render' }, `🔄 화면 다시 그린 횟수 ${renderNo}`),
+    h('p', { id: 'debug-memo' }, `🧮 목록 다시 거른 횟수 ${memoRuns} (useMemo가 건너뛴 횟수 ${renderNo - memoRuns})`),
   );
 }
 
@@ -134,7 +135,7 @@ export function createTodoApp(debug: DebugSource, doc: Document = document) {
 
     return h(
       'div',
-      { id: 'todo-app' },
+      { id: 'todo-app', 'data-c': 'App · State는 여기만' },
       h(Header, { stats }),
       h(TodoInput, { value: input, onInput: setInput, onAdd, onAddThree }),
       h(FilterBar, { filter, onChange: setFilter }),

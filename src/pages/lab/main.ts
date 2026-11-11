@@ -27,8 +27,16 @@ export interface RunResult {
 }
 
 /** 목록: version이 바뀌면 scope에 따라 첫 항목만 또는 전부 글자가 바뀐다 */
+const NAMES = ['무선 이어폰', '텀블러', '노트북 거치대', '기계식 키보드', '백팩', '운동화', '전기포트', '모니터', '머그컵', '보조배터리'];
+
+/** 상품 목록 n개. version이 바뀌면 scope에 따라 첫 상품만 또는 전부 가격이 바뀐다 */
 export function buildList(n: number, version: number, scope: Scope): VElement {
-  return h('ul', { id: 'lab-list' }, ...Array.from({ length: n }, (_, i) => h('li', { key: String(i) }, `항목 ${i} · v${scope === 'all' || i === 0 ? version : 0}`)));
+  return h('ul', { id: 'lab-list' }, ...Array.from({ length: n }, (_, i) => {
+    const v = scope === 'all' || i === 0 ? version : 0;
+    const price = 10000 + ((i * 7919) % 90000) + v * 100; // 회차마다 반드시 값이 달라진다
+    const name = `${NAMES[i % NAMES.length]} ${i + 1}`;
+    return h('li', { key: String(i) }, `${name} · ${price.toLocaleString()}원`);
+  }));
 }
 
 const subtree = (node: Node): number => {
@@ -81,7 +89,7 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
       if (dom) dom.textContent = r.created ? `새로 만든 노드 ${r.created.toLocaleString()}` : `DOM 수정 ${r.modified.toLocaleString()}`;
     }
     if (!out) return;
-    const name = { sync: 'Patch (동기)', sliced: 'Patch (협력적 스케줄링)', replace: '통째 교체' }[r.mode];
+    const name = { sync: '부분 렌더링 · 동기식', sliced: '부분 렌더링 · 분할식', replace: '전체 렌더링' }[r.mode];
     out.textContent = [
       `${name} · 항목 ${r.n.toLocaleString()}개 · ${r.scope === 'all' ? '전부 변경' : '1개만 변경'}`,
       `메인 스레드 최장 연속 점유 ${r.longestMs.toFixed(1)}ms ${r.longestMs >= 50 ? '⚠ Long Task(50ms 이상)' : ''}`,
@@ -161,11 +169,18 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
   function auto(mode: Mode): void {
     if (timer) clearInterval(timer);
     maxLag = 0;
+    worst = 0;
+    measuring = true;
+    if (n < 10000) {
+      reset(10000, 'all'); // 차이가 보이도록 1만 개·전부 변경으로 맞춘다
+      doc.querySelectorAll('.seg button').forEach((b) => b.classList.toggle('on', ['10000', 'all'].includes((b as HTMLElement).dataset.v ?? '')));
+    }
     const until = now() + 3000;
     timer = setInterval(() => {
       if (now() > until && timer) {
         clearInterval(timer);
         timer = null;
+        measuring = false;
         return;
       }
       void update(mode);
@@ -175,7 +190,7 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
   // 세 방식을 같은 출발 상태에서 차례로 실행해 카드에 나란히 보여 준다
   async function compare(): Promise<RunResult[]> {
     const results: RunResult[] = [];
-    for (const m of ['sync', 'sliced', 'replace'] as Mode[]) {
+    for (const m of ['replace', 'sync', 'sliced'] as Mode[]) {
       reset(n, scope);
       const r = await update(m);
       if (r) results.push(r);
@@ -184,7 +199,7 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
     const [sy, sl] = [results.find((r) => r.mode === 'sync'), results.find((r) => r.mode === 'sliced')];
     if (v && sy && sl) {
       v.textContent = sy.longestMs >= 50 && sl.longestMs < 50
-        ? `결론: 나눠서 하면 화면이 멈추는 시간이 ${sy.longestMs.toFixed(0)}ms → ${sl.longestMs.toFixed(0)}ms. 대신 끝나는 데는 조금 더 걸림`
+        ? `결론: 분할식으로 하면 화면이 멈추는 시간이 ${sy.longestMs.toFixed(0)}ms → ${sl.longestMs.toFixed(0)}ms. 대신 끝나는 데는 조금 더 걸림`
         : `이 크기에선 셋 다 50ms 안에 끝남 → 나눌 필요 없음. 1만 개로 해 보세요`;
     }
     return results;
@@ -209,8 +224,38 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
   });
   doc.querySelectorAll<HTMLElement>('[data-auto]').forEach((b) => b.addEventListener('click', () => {
     auto(b.dataset.auto as Mode);
-    (doc.getElementById('lab-input') as HTMLInputElement | null)?.focus();
   }));
+
+  // 움직이는 공: requestAnimationFrame으로 매 프레임 자바스크립트가 위치를 옮긴다.
+  // 메인 스레드가 바쁘면 프레임이 밀려 공이 멈춘다 → 멈춘 시간을 잰다 (CSS 애니메이션은 따로 돌 수 있어서 쓰지 않음)
+  const ball = doc.getElementById('lab-ball');
+  const stutter = doc.getElementById('lab-stutter');
+  let worst = 0;
+  let measuring = false;
+  if (ball && typeof requestAnimationFrame === 'function') {
+    let last = now();
+    let x = 0;
+    let dir = 1;
+    const tick = () => {
+      const t = now();
+      const gap = t - last;
+      last = t;
+      if (measuring && gap > worst) {
+        worst = gap;
+        if (stutter) {
+          stutter.textContent = `${worst.toFixed(0)}ms`;
+          stutter.classList.toggle('slow', worst >= 50);
+        }
+      }
+      const width = (ball.parentElement?.clientWidth ?? 300) - 34;
+      x += dir * gap * 0.35;
+      if (x > width) { x = width; dir = -1; }
+      if (x < 0) { x = 0; dir = 1; }
+      ball.style.transform = `translateX(${x}px)`;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
 
   // Long Task 관찰 (Chrome 등 지원 브라우저만)
   const lt = doc.getElementById('lab-longtask');

@@ -15,7 +15,7 @@ export function startPhase2(doc: Document = document) {
   comp = render(app.App, {}, root, {
     onCommit: (c) => {
       if (log) log.textContent = c.lastChanges.length ? c.lastChanges.map(formatChange).join('\n') : '변경 없음';
-      if (effects) effects.textContent = `useEffect(제목) 실행 ${app.counters.effectRuns}회`;
+      if (effects) effects.textContent = `📌 브라우저 탭 제목 바꾼 횟수 ${app.counters.effectRuns} (useEffect: 남은 개수가 바뀔 때만)`;
     },
   });
   return { component: comp, counters: app.counters };
