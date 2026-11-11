@@ -1,71 +1,38 @@
-# ADR 목록
+# 통합 ADR (Architecture Decision Records) 번호표
 
-`somage/works`와 `eungi/docs/adr` 두 곳의 ADR을 `docs/adr/` 한 곳으로 모은 목록이다. 취합 브랜치는 `eungi`다.
+이 디렉터리는 미니 React 프로젝트의 모든 아키텍처 결정 문서(`ADR-0001` ~ `ADR-0015`)와 팀 설계 검토 피드백(`docs/reviews/feedback-01` ~ `06`)의 통합 기준표이다.
 
-## 1. 통합 번호
+> **참고**: `ADR-0001` 본문 일부 변경 이력에는 번호 통합 전 명칭인 `ADR-0013`이 남아 있으나, 통합 번호표 기준 **컴포넌트 렌더링(`h`, `mount`, `update`, `events`)은 `ADR-0015`**이며, 구 `eungi` 브랜치의 `ADR-0013`·`ADR-0014`는 `superseded` 처리되었다.
 
-somage ADR은 모두 accepted이고 서로를 번호로 인용하며, `리액트 issue.md`와 SRS도 이 번호를 쓴다. 그래서 0001~0006은 그대로 두고 eungi ADR을 0007부터 다시 매겼다. 복구한 보완 ADR은 그 뒤에 붙였다.
+| 번호 | 제목 | 상태 | 핵심 결정 | 반영 문서 |
+| --- | --- | --- | --- | --- |
+| **ADR-0001** | Virtual DOM 노드 모양 | Accepted (2026-11-11 `events` 추가 재확인 완료) | `type` 구별(`element`/`text`), 키의 네 무리(화면 데이터 5키 · `key` · `dom` · `events`), 비교 기준표 | Phase 1 · 2 |
+| **ADR-0002** | 실제 DOM → Virtual DOM 변환 & 공백 · 정제 규칙 | Accepted (2026-11-11 4절 `s2` 재확인 완료) | 선택지 4(연속 공백 1칸 + `<pre>` 예외), 주석 제외, `key` 분리, **4절 `s2`**: `<script>`, `on*`, `javascript:` 건너뛰기 (`S1~S4`) | Phase 1 · 2 |
+| **ADR-0003** | Virtual DOM → 실제 DOM (`vnodeToDom`) | Accepted | 화면 밖 재귀 완성 후 1회 부착, `key` 속성 재부착, `dom` 미읽기/미기록 | Phase 1 · 2 |
+| **ADR-0004** | Diff · Patch 구조 & `dom` · `key` · `value`/`checked` | Accepted (2026-11-11 1절 `value`/`checked` 재확인 완료) | Diff/Patch 분리(A), `dom` 기반 이전 dict 참조(3+), key 우선 짝짓기(3-나), **1절 `value`/`checked` 프로퍼티 동기화** (`TD3~TD5`) | Phase 1 · 2 |
+| **ADR-0005** | Patch 적용 순서 · `pairs` · 실패 복구(`t3`) | Accepted (2026-11-11 6절 `t3`·컨테이너 인자 재확인 완료, 3번은 ADR-0017로 좁힘) | `A1` 이동 판단, `B2` `before` 기준 dict, `D1` `{ changes, pairs }`, `C2` [삭제 → 자리 → 자신 → 자식], `F1` `recordDom`, **6절 `t3` `recoverPatch(container, nextTree, err)`** (`D1~D15`, `P1~P12`, `R1~R2`) | Phase 1 · 2 |
+| **ADR-0006** | 테스트 영역 구성 & 시연 기능(8절) | Accepted (2026-11-11 8절 시연 기능 재확인 완료) | `#editor` + `#preview`, `f1` 단방향, `e3` 0.3s 디바운스, `a3` 공백 보존 HTML, `c1`, `g1`, `h1`, `i1`, **8절 시연**: `formatChange` 요약, `#status`, `y2` `animate()` 하이라이트, `v2+w1` 트리 뷰어 (`TA1~TA12`, `U1~U2`, `HL1~HL2`, `TV1~TV4`) | Phase 1 · 2 |
+| **ADR-0007** | 프로그래밍 언어 (TypeScript) | Accepted | TypeScript strict 컴파일 + 순수 브라우저 DOM / Vite 기반 (외부 프레임워크 0, `C-01`) | 공통 |
+| **ADR-0008** | State History (`피드백 01` / 블로그 97) | Accepted (2026-11-11 팀 승인) | 선형 배열 + `index`, `j1` 분기 시 뒤 삭제, `k1` 무변경 미기록, `m3·n2` 미패치/0.3초 대기 이동 차단, `goTo`/`limit=100`/`archive[]` 제외 (`archive[]`는 확장 후보) (`H1~H12`) | Phase 1 |
+| **ADR-0009** | Batching (`피드백 05` / 블로그 101) | Accepted (2026-11-11 팀 승인) | `b1` `queueMicrotask` 자동 Batching, `flushSync()`, 렌더 중 setter 경고+유예, **내부 연쇄만 카운트(>50 오류)** (`B1~B6`) | Phase 2 |
+| **ADR-0010** | Hooks (`피드백 04~05` / 블로그 100·101) | Accepted (2026-11-11 팀 승인) | `hooks[]` 순서 저장, `useEffect` `f1`(생략=매렌더) + `g1`(cleanup) + 예외 격리, `useMemo`, `HookCallError`(`renderingChild > 0` 포함)·`HookOrderError`(Diff/Patch 전 중단) (`K1~K14`, `HR1~HR6`) | Phase 2 |
+| **ADR-0011** | 테스트 환경 (Vitest + jsdom) | Accepted (2026-11-11 팀 승인) | 단위/통합/속성 테스트 환경 구성 | 공통 |
+| **ADR-0012** | 아키텍처 검증 하네스 (L1~L4) | Accepted (2026-11-11 팀 승인) | L1(경계), L2(Patch만 DOM 쓰기), L3(정적 분석), L4(불변식 검증) | 공통 |
+| **ADR-0013** | *(Superseded)* Patch 사전 확인 (`t2`) | Superseded | `ADR-0005` 6절 `t3`(`recoverPatch`)로 대체됨 (`피드백 02` 5-1절) | `docs/adr/superseded/` |
+| **ADR-0014** | *(Superseded)* 입력 정제 | Superseded | `ADR-0002` 4절 `s2`로 통합됨 (`피드백 02` 5-1절) | `docs/adr/superseded/` |
+| **ADR-0015** | 컴포넌트 렌더링 (`피드백 03·06` / 블로그 99·102) | Accepted (2026-11-11 팀 승인) | `h()` 자식 즉시 펼침 + **컴포넌트 `key` 루트 부착(props 미전달)**, `events` 키(e2) & 고정 리스너 `__handlers`, `mount()`(`dom` 기록), `update()`, **`unmount()` 미도입** (`C1~C10`, `TD1~TD11`) | Phase 2 |
+| **ADR-0016** | 건너뛴 노드 양옆 글자 노드 합치기 (설계 검토 반례 1·2·3) | Accepted (2026-11-11 팀 승인) | `dom_to_vdom`이 주석·`<script>`를 건너뛴 뒤 나란히 남은 글자 노드를 하나로 합친다(u1). 공백끼리만 합칠지 함께 결정 (`T16`, `T17`, `S5`, `TA13`) | Phase 1 · 2 |
+| **ADR-0017** | 뒤로·앞으로가기 중 t3 복구 시 History (설계 검토 반례 5) | Accepted (2026-11-11 팀 승인) | Patch 버튼 복구만 `push`, 이동 중 복구는 위치 그대로(v2) (`R3`, `R4`) | Phase 1 |
+| **ADR-0018** | `<pre>` 첫 줄바꿈 왕복 (반례 4) | Accepted (2026-11-11 팀 승인) | a3가 `<pre>` 첫 글자가 줄바꿈이면 줄바꿈 하나를 더 쓴다(w2) (`TA14`) | Phase 1 |
+| **ADR-0019** | Phase 1 페이지 경계 동작 4가지 (반례 6, SDD 11장) | Accepted (2026-11-11 팀 승인) | 빈 코드 Patch(x1), 여러 최상위 요소(x2), 복구 실패(x3), "수정 취소" 버튼(x4) (`H13`, `H14`, `TA15`, `R5`) | Phase 1 |
 
-| 통합 번호 | 제목 | 상태 | 원래 위치 | 파일 이름 |
-|---|---|---|---|---|
-| ADR-0001 | Virtual DOM 노드 모양 | accepted | `somage/works` ADR 0001 | `adr_0001_vdom_node_shape.md` |
-| ADR-0002 | DOM → Virtual DOM 변환과 공백 규칙 | accepted | `somage/works` ADR 0002 | `adr_0002_dom_to_vdom.md` |
-| ADR-0003 | Virtual DOM → 실제 DOM 그리기 | accepted | `somage/works` ADR 0003 | `adr_0003_vdom_to_dom.md` |
-| ADR-0004 | Diff·Patch 분리, `dom` 참조, key 짝짓기 | accepted | `somage/works` ADR 0004 | `adr_0004_diff_patch.md` |
-| ADR-0005 | Patch 적용 순서와 `{ changes, pairs }` | accepted | `somage/works` ADR 0005 | `adr_0005_patch.md` |
-| ADR-0006 | 테스트 영역 = 코드 입력칸 + 미리보기 | accepted | `somage/works` ADR 0006 | `adr_0006_test_area.md` |
-| ADR-0007 | 프로그래밍 언어 (TypeScript) | accepted | eungi `adr_001` + somage `ADR_0001_programming-language` (중복 병합) | `adr_0007_language.md` |
-| ADR-0008 | History 정책 (선형, 변경 없으면 기록 안 함, 수정 중 이동 금지) | proposed | eungi `adr_002` + 팀 설계 검토(블로그 97) | `adr_0008_history_policy.md` |
-| ADR-0009 | State 변경 Batching (microtask) | proposed | eungi `adr_006` | `adr_0009_batching.md` |
-| ADR-0010 | Hook 저장 방식과 호출 규칙 | proposed | eungi `adr_007` | `adr_0010_hook_rules.md` |
-| ADR-0011 | 테스트 하네스 (Vitest + jsdom) | proposed | eungi `adr_008` | `adr_0011_test_harness.md` |
-| ADR-0012 | 설계 준수 검증 하네스 | proposed | eungi `adr_009` | `adr_0012_design_harness.md` |
-| ADR-0013 | Patch 적용 전 검증 (원자적 실패) | proposed | eungi `adr_005`에서 복구, ADR-0005 보완 | `adr_0013_patch_preflight.md` |
-| ADR-0014 | 입력 정제 (`<script>`, `on*`, `javascript:`) | proposed | eungi `adr_003`에서 복구, ADR-0002·0006 보완 | `adr_0014_input_sanitize.md` |
+## 블로그 설계 검토 일지 ↔ 저장소 피드백 매핑
 
-**파일 이름 바꾸기 작업 목록** (eungi 브랜치 `docs/adr/`)
+외부 URL(`https://eutopiaa.tistory.com/97~102`)의 팀 설계 검토 내용은 저장소 내 다음 문서로 전문 보관되어 `SDD_final_phase1.md` 및 `SDD_final_phase2.md`에 모두 반영되었다.
 
-- somage ADR 6개는 소망 님이 위 파일 이름으로 eungi에 PR을 올린다. 본문 맨 위의 "목표:" 줄과 메타데이터는 그대로 둔다.
-- `adr_001_first_language.md` → `adr_0007_language.md`, 본문 제목 `ADR-0001` → `ADR-0007`
-- `adr_002_history_branch_policy.md` → 이 PR의 `adr_0008_history_policy.md`로 교체 (개정본)
-- `adr_006_batching.md` → `adr_0009_batching.md`, 제목 `ADR-0006` → `ADR-0009`
-- `adr_007_hook_rule_enforcement.md` → `adr_0010_hook_rules.md`, 제목 `ADR-0007` → `ADR-0010`
-- `adr_008_test_harness.md` → `adr_0011_test_harness.md`, 제목 `ADR-0008` → `ADR-0011`, 본문의 "ADR-0001"(언어) → "ADR-0007"
-- `adr_009_design_verification_harness.md` → `adr_0012_design_harness.md`, 제목 `ADR-0009` → `ADR-0012`
-- `adr_README.md`는 이 파일(`README.md`)로 합치고 지운다.
-
-## 2. 대체된 ADR
-
-삭제했다. 원문은 아래 커밋에서 볼 수 있다.
-
-| 원래 위치 | 대체한 ADR | 살려 둔 내용 | 원문 |
-|---|---|---|---|
-| eungi `adr_003` 테스트 영역 수정 방식 | ADR-0006 | 입력 정제 → ADR-0014 | [067122b](https://github.com/team1-mini-lab/mini-react/blob/067122b05a3fb1804ee9aaa7fb5e95501acdebef/docs/adr/adr_003_test_area_input.md) |
-| eungi `adr_004` Diff 비교 전략 | ADR-0004 | — | [067122b](https://github.com/team1-mini-lab/mini-react/blob/067122b05a3fb1804ee9aaa7fb5e95501acdebef/docs/adr/adr_004_diff_strategy.md) |
-| eungi `adr_005` Patch 일괄 적용 | ADR-0005 | 원자적 실패 → ADR-0013 | [067122b](https://github.com/team1-mini-lab/mini-react/blob/067122b05a3fb1804ee9aaa7fb5e95501acdebef/docs/adr/adr_005_patch_atomic_apply.md) |
-
-## 3. 충돌을 판정한 방법
-
-두 설계가 부딪히면 아래 순서로 판정했다.
-
-1. **합격선**: `리액트 issue.md`의 인수 기준 중 과제 원문에서 온 것(FR-03~FR-08, NFR-01, NFR-03, C-03, C-08). SRS 1.2는 somage ADR을 토대로 쓰였으므로 합격선으로 쓰면 순환 논리가 된다.
-2. **판별 테스트**: 두 설계의 결과가 갈리는 시나리오를 하나 골라 손으로 따라간다. 합격선을 넘지 못하는 쪽은 탈락한다.
-3. **보완 가능성**: 둘 다 합격하거나 한쪽에 빈 곳이 있으면, 진 쪽의 아이디어로 빈 곳을 채울 수 있는지 본다.
-4. **비용과 합의 상태**: 그래도 같으면 구현량이 적고 accepted인 쪽.
-
-## 4. 충돌 목록
-
-표기 규칙: ID는 `CF-xx`(issue.md의 `C-xx`와 겹치지 않게). 미결 충돌은 해당 ADR 본문에 `> [!WARNING]` 블록을 두고, 해소되면 `[!NOTE]`로 바꾸되 지우지 않는다.
-
-| ID | 내용 | eungi | somage | 판별 테스트와 결과 | 판정 |
-|---|---|---|---|---|---|
-| CF-01 | 자식 짝짓기와 변경 종류 | 위치 비교 + 5종 | key 짝짓기 + 6종 | ADR-0005 P2(바나나 입력칸 3 → 맨 앞 사과 추가): eungi는 "3"이 사과 옆으로 가고 조작 n+1번 → **FR-04·NFR-01 불합격** | somage |
-| CF-02 | Patch 대상 지정 | `path: number[]` + 초기화 때 실제 영역 다시 그리기 | 이전 객체 + `dom` 참조 | P4(실제 영역에 주석이 있을 때 둘째 항목 수정): eungi는 첫 로드에 실제 영역 전체를 다시 그려야 동작 → 첫 로드부터 모든 요소가 새 객체(FR-04 취지 위반). somage는 그대로 | somage |
-| CF-03 | Patch 실패 원자성 | 적용 전 확인, 실패 시 0건 | 정의 없음 | VT-31(대상 없는 변경): somage는 반쯤 바뀐 상태가 남을 수 있음 | **보완**: ADR-0013 |
-| CF-04 | 입력 정제 | `on*`·`<script>` 제거 | 모든 속성 유지 | `<img onerror>` 입력 후 Patch: somage는 실행됨 | **보완**: ADR-0014 |
-| CF-05 | 파서·갱신 시점 | `DOMParser`, 실시간 | `<template>`, 0.3초 | TA9(입력 직후 Patch): 둘 다 실행 안 됨, 실시간은 쓰다 만 코드로 미리보기가 깨짐 | somage |
-| CF-06 | ADR 번호 중복 | 001~009 | 0001~0006 | — | 1절 통합 번호 |
-| CF-07 | 함수 이름·표기 | camelCase | snake_case, Python 표기 | — | SDD 1.6 이름 대응표 (코드는 camelCase, ADR 이름 병기) |
-| CF-08 | 용어·ID 체계 | SRS CON-xx | issue.md C-xx | — | SRS 5.1.4 대응표, 나머지 TBD-10 |
-| CF-09 | 루트 교체 | 루트 REPLACE는 `PatchError` | 루트도 교체 가능, 틀로 찾기 | TA10(`div` → `section`): eungi는 FR-02(태그 자유 수정) 불합격 | somage |
-| CF-10 | `value`·`checked` 반영 | 속성 대신 프로퍼티로 쓰고 같으면 생략 | `setAttribute`만 | 사용자가 입력한 뒤 코드에서 `value`를 바꿔 Patch: somage는 화면 값이 안 바뀜 | **보완**: SDD 3.4 규칙 (속성과 프로퍼티를 함께 씀) |
+- `tistory.com/97` → `docs/reviews/feedback-01-history.md` (`ADR-0008`)
+- `tistory.com/98` → `docs/reviews/feedback-02-screen-layout.md` (`ADR-0002` §4, `ADR-0005` §6, `ADR-0006` §8)
+- `tistory.com/99` → `docs/reviews/feedback-03-mount-update-h.md` (`ADR-0015`, `ADR-0001`, `ADR-0005` §6 일반화)
+- `tistory.com/100` → `docs/reviews/feedback-04-hooks.md` (`ADR-0010` 전반)
+- `tistory.com/101` → `docs/reviews/feedback-05-batching-hook-rules.md` (`ADR-0009`, `ADR-0010` 규칙 검사)
+- `tistory.com/102` → `docs/reviews/feedback-06-todo-page.md` (`ADR-0004` §1, `ADR-0006` §8, `ADR-0015` §1)

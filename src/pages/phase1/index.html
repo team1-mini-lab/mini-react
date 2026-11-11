@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini React — Phase 1 (Virtual DOM · Diff · Patch)</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <h1>Phase 1 · Virtual DOM + Diff + Patch</h1>
+      <p class="sub">실제 영역은 <b>바뀐 부분만</b> 고칩니다. 코드 입력칸을 고친 뒤 Patch를 누르세요.</p>
+    </header>
+
+    <main class="grid">
+      <section class="panel">
+        <h2>실제 영역</h2>
+        <!-- 실제 영역 틀 (고정). 루트는 틀의 첫 자식 요소 (CON-07). 샘플은 SDD_final_phase1 7.2 그대로 -->
+        <section id="real-area"><div id="app">
+  <h1>장바구니 목록</h1>
+  <!-- 1. key 목록 + 줄별 수량 input (D6, P2 시연) -->
+  <ul>
+    <li key="b">바나나 <input type="text" class="qty" value="3" /></li>
+    <li key="s">딸기 <input type="text" class="qty" value="1" /></li>
+  </ul>
+  <!-- 2. 주석 노드 하나 (P4 시연) -->
+  <!-- 주문 메모 섹션 -->
+  <!-- 3. 스크롤 박스 (FR-04 시연) -->
+  <div id="scroll-box" style="height: 60px; overflow-y: scroll;">
+    <p>안내 문구 1</p><p>안내 문구 2</p><p>안내 문구 3</p><p>안내 문구 4</p>
+  </div>
+  <!-- 4. <pre> 블록 (TA3, T4 시연) -->
+  <pre>배송 안내:
+  - 당일 배송
+  - 신선 포장</pre>
+  <!-- 5. 2칸 들여쓰기된 HTML 구조 (TA1 무변경 Patch 시연) -->
+</div></section>
+      </section>
+
+      <section class="panel" id="test-area">
+        <h2>테스트 영역</h2>
+        <label class="label" for="editor">코드 입력칸</label>
+        <textarea id="editor" spellcheck="false"></textarea>
+        <h3 class="label">미리보기 (Virtual DOM으로 그림)</h3>
+        <section id="preview"></section>
+      </section>
+    </main>
+
+    <div class="controls">
+      <button id="patch" type="button">Patch</button>
+      <button id="undo" type="button">뒤로가기</button>
+      <button id="redo" type="button">앞으로가기</button>
+      <button id="revert" type="button">수정 취소</button>
+      <span id="history-pos"></span>
+      <p id="status" role="status"></p>
+    </div>
+
+    <section class="panel">
+      <h2>변경 목록 (Patch 한 줄 요약)</h2>
+      <pre id="change-log"></pre>
+    </section>
+
+    <section class="panel" id="key-demo">
+      <h2>key 있음 · 없음 비교 (FR-09)</h2>
+      <p class="sub">두 목록의 입력칸에 숫자를 적고 "맨 앞에 사과 추가"를 누르세요. key가 있으면 숫자가 자기 과일을 따라갑니다.</p>
+      <div class="trees">
+        <div><h3 class="label">key 있음</h3><div id="kd-keyed"></div></div>
+        <div><h3 class="label">key 없음</h3><div id="kd-unkeyed"></div></div>
+      </div>
+      <div class="controls" style="padding: 8px 0 0">
+        <button id="kd-add" type="button">맨 앞에 사과 추가</button>
+        <button id="kd-reset" type="button">처음으로</button>
+      </div>
+      <pre id="kd-log"></pre>
+    </section>
+
+    <section class="panel" id="tree-viewer">
+      <h2>트리 보기</h2>
+      <div id="tree-legend"></div>
+      <div class="trees">
+        <div><h3 class="label">이전 트리</h3><div id="tree-old"></div></div>
+        <div><h3 class="label">새 트리</h3><div id="tree-new"></div></div>
+      </div>
+    </section>
+
+    <script type="module">
+      import { startPhase1 } from './main.ts';
+      startPhase1(document);
+    </script>
+  </body>
+</html>
