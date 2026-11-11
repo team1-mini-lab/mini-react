@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>성능 실험실 — mini-react</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <p><a href="../../../index.html">← 처음으로</a></p>
+      <h1>성능 실험실</h1>
+      <p class="lead">같은 목록 변경을 세 방식으로 적용해 봅니다. <b>협력적 스케줄링</b>은 Diff를 5ms씩 나눠 실행하고 사이사이 메인 스레드를 양보해서, 큰 목록을 처리하는 동안에도 입력이 막히지 않게 합니다. 실제 DOM에 반영하는 Commit은 나누지 않습니다.</p>
+
+      <section class="panel controls">
+        <label>방식
+          <select id="lab-mode">
+            <option value="sync">Patch (동기, 지금 엔진)</option>
+            <option value="sliced">Patch (협력적 스케줄링)</option>
+            <option value="replace">통째 교체 (innerHTML 방식)</option>
+          </select>
+        </label>
+        <label>항목 수
+          <select id="lab-size">
+            <option value="1000">1,000</option>
+            <option value="10000">10,000</option>
+            <option value="30000">30,000</option>
+          </select>
+        </label>
+        <label>변경 범위
+          <select id="lab-scope">
+            <option value="all">전부 변경</option>
+            <option value="one">1개만 변경</option>
+          </select>
+        </label>
+        <button id="lab-run" type="button">한 번 업데이트</button>
+        <button id="lab-auto" type="button">3초 동안 계속 업데이트</button>
+      </section>
+
+      <section class="panel">
+        <label class="typing">업데이트하는 동안 여기에 계속 타이핑해 보세요
+          <input id="lab-input" type="text" placeholder="가나다라마바사…" />
+        </label>
+        <p id="lab-lag" class="muted">입력 지연이 여기에 표시됩니다</p>
+        <p id="lab-longtask" class="muted"></p>
+        <pre id="lab-result">버튼을 눌러 실행하세요</pre>
+      </section>
+
+      <section class="panel note">
+        <b>읽는 법</b>
+        <ul>
+          <li><b>최장 연속 점유</b>가 50ms를 넘으면 그동안 클릭·입력을 처리하지 못합니다(Long Task).</li>
+          <li>10,000개 이상에서 동기 Patch는 Diff 동안 메인 스레드를 오래 잡습니다. 협력적 스케줄링은 Diff를 잘게 나눠 이 시간을 줄이지만, 전체 시간은 조금 늘어납니다.</li>
+          <li>Commit(실제 DOM 반영)은 나눌 수 없어서, 바뀐 노드가 많으면 여전히 길 수 있습니다. 그래서 DOM 변경량 자체를 줄이는 것이 중요합니다.</li>
+          <li><b>전부 변경</b>이면 Patch도 노드를 모두 고쳐야 해서 통째 교체와 큰 차이가 없을 수 있습니다. <b>1개만 변경</b>에서 차이가 분명합니다. Virtual DOM은 만능이 아닙니다.</li>
+          <li>시간은 기계와 브라우저마다 다릅니다. 자동 테스트는 노드 수와 결과 화면으로만 판정합니다.</li>
+        </ul>
+      </section>
+
+      <section class="panel"><div id="lab-root"></div></section>
+    </main>
+    <script type="module">
+      import { startLab } from './main.ts';
+      startLab(document);
+    </script>
+  </body>
+</html>

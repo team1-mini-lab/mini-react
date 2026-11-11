@@ -9,7 +9,7 @@
 
 | 테스트 | VT(검증 항목) | 요구사항 추적 | 뮤테이션 점수 | 커버리지 (core · component) | 외부 UI 프레임워크 |
 |:---:|:---:|:---:|:---:|:---:|:---:|
-| **191 / 191** | **49 / 49** | **44 / 44** | **85.7%** | **97% · 99%** | **0** |
+| **199 / 199** | **51 / 51** | **44 / 44** | **85.7%** | **97% · 99%** | **0** |
 
 > 숫자는 모두 `scripts/report.py`가 명령 결과로 만든 [검증 보고서](docs/verification/runs/2026-11-11-final-report.md)에서 나온 값입니다. push·PR마다 CI가 다시 계산해 PR 댓글로 올립니다.
 
@@ -43,6 +43,13 @@
 - **Batching**: setState를 여러 번 불러도 `queueMicrotask`로 모아 한 번만 다시 그림. 무한 루프는 50회에서 차단
 - **Phase 1 엔진 재사용**: 다시 그릴 때 Phase 1의 `diff`·`applyPatch`를 **수정 없이** 그대로 사용
 - **Todo 앱**: 위의 `h`·Hooks만으로 만든 테스트 페이지 (React·JSX 0줄)
+
+### 확장 — 협력적 스케줄링과 성능 실험실 (ADR-0020, 팀 승인 대기)
+
+- **문제**: 렌더링이 동기라 목록이 크면 메인 스레드를 오래 잡는다 (jsdom 측정: 10,000개에서 Diff 약 43ms + Commit 약 57ms)
+- **개선**: Diff를 노드 단위 작업(generator)으로 바꿔 `diffSliced()`가 5ms씩 나눠 실행하고 `MessageChannel`로 양보한다. 새 업데이트가 오면 앞 작업을 버리고 최신 상태로 다시 시작한다. 실제 DOM에 반영하는 Commit은 나누지 않는다
+- **증명**: 무작위 트리 300쌍에서 동기 Diff와 결과가 같음(fast-check). [성능 실험실](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)에서 동기·협력적·통째 교체를 나란히 돌려 최장 연속 점유(Long Task), 입력 지연, DOM 노드 수를 비교한다
+- **한계도 그대로 보여 준다**: Commit은 여전히 동기이고, 전부 바뀌는 변경이면 Patch도 모든 노드를 고친다
 
 ---
 
@@ -97,7 +104,7 @@ flowchart LR
 "테스트가 통과한다"를 넘어, **요구사항 하나하나가 설계·코드·테스트로 이어지는지**를 기계가 확인하게 만들었습니다. 표준은 IEEE 1012(V&V), ISO/IEC/IEEE 29148(요구사항), IEEE 1016(설계 기술)을 참고했습니다.
 
 ```
-SRS(ID 106개) → ADR(결정 19개) → SDD(설계) → 코드(src) → VT(검증 항목 49개) → 테스트 191개
+SRS(ID 106개) → ADR(결정 19개) → SDD(설계) → 코드(src) → VT(검증 항목 49개) → 테스트 199개
 ```
 
 | 관문 | 확인하는 것 | 도구 |
@@ -126,7 +133,7 @@ npm run dev          # http://localhost:5173 → Phase 1 / Phase 2 링크
 
 | 명령 | 하는 일 |
 |---|---|
-| `npm test` | Vitest 191개 (jsdom) |
+| `npm test` | Vitest 199개 (jsdom) |
 | `npm run test:coverage` | 커버리지 (core·component 90% 미만이면 실패) |
 | `npm run test:mutation` | Stryker 뮤테이션 테스트 (약 10분) |
 | `npm run verify` | 타입 검사 + 기술 스택 + 의존 방향 + lint + 문서 정합성 + 테스트 |
@@ -159,7 +166,7 @@ docs/
 | 이름 | 주요 기여 |
 |---|---|
 | 김소망 | Phase 1 핵심 설계 결정 ADR-0001~0006(Virtual DOM 노드, DOM 변환, Diff·Patch, 테스트 영역)과 Phase 2 ADR-0015(컴포넌트 렌더링·이벤트) 작성, 팀 설계 검토(피드백 01~06) |
-| 김은기 (velocitygoal) | ADR-0007~0014(언어, History, Batching, Hooks, 테스트·설계 하네스 등) 작성, 하네스 반례 판정으로 ADR-0016~0019 도출, 요구사항(SRS)·최종 설계서(SDD) 정리, Phase 1·2 구현과 테스트 191개, 검증 하네스·CI 보고서·뮤테이션 테스트 |
+| 김은기 (velocitygoal) | ADR-0007~0014(언어, History, Batching, Hooks, 테스트·설계 하네스 등) 작성, 하네스 반례 판정으로 ADR-0016~0019 도출, 요구사항(SRS)·최종 설계서(SDD) 정리, Phase 1·2 구현과 테스트 199개, 검증 하네스·CI 보고서·뮤테이션 테스트 |
 | Hyunji Lee | 저장소 구성, 설계 결정 검토 |
 
 설계 과정 기록: [미니 리액트 개발 일지](https://eutopiaa.tistory.com/90)

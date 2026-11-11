@@ -63,11 +63,12 @@
         <div class="cta">
           <a class="btn primary" href="./src/pages/phase1/index.html">Phase 1 검증 페이지 열기</a>
           <a class="btn primary" href="./src/pages/phase2/index.html">Phase 2 Todo 앱 열기</a>
+          <a class="btn primary" href="./src/pages/lab/index.html">성능 실험실 열기</a>
           <a class="btn ghost" href="https://github.com/team1-mini-lab/mini-react">GitHub 저장소</a>
         </div>
         <div class="stats" style="margin-top:28px">
-          <div class="stat"><b>191 / 191</b><span>자동 테스트 통과</span></div>
-          <div class="stat"><b>49 / 49</b><span>검증 항목(VT) 증거</span></div>
+          <div class="stat"><b>199 / 199</b><span>자동 테스트 통과</span></div>
+          <div class="stat"><b>51 / 51</b><span>검증 항목(VT) 증거</span></div>
           <div class="stat"><b>44 / 44</b><span>요구사항 → 코드 → 테스트 사슬</span></div>
           <div class="stat"><b>85.7%</b><span>뮤테이션 점수 (기준 70%)</span></div>
           <div class="stat"><b>0</b><span>사용한 UI 프레임워크</span></div>
@@ -172,7 +173,7 @@
             <thead><tr><th>우리 구현</th><th>실제 React</th><th>이유</th></tr></thead>
             <tbody>
               <tr><td>자식 컴포넌트를 <code>h()</code> 안에서 바로 펼쳐 순수 Virtual DOM만 남김</td><td>Fiber 트리에 컴포넌트 노드를 남김</td><td>자식이 상태 없는 순수 함수라 Phase 1 Diff를 그대로 씀</td></tr>
-              <tr><td>렌더링을 한 번에 끝까지 동기로 실행</td><td>작업을 나눠 메인 스레드를 양보할 수 있음 (Concurrent)</td><td>구현 범위. 큰 목록에서는 메인 스레드를 오래 잡을 수 있음</td></tr>
+              <tr><td>렌더링은 동기. 단, <b>Diff는 시간 분할 실행 가능</b>(협력적 스케줄링, 성능 실험실)</td><td>렌더 단계 전체를 나눠 양보 (Fiber, Concurrent)</td><td>우리는 <code>h()</code>가 자식을 바로 펼쳐 렌더 단계를 나눌 지점이 없으므로 Diff부터 나눔. Commit은 둘 다 동기</td></tr>
               <tr><td>요소마다 고정 리스너 1개, 핸들러만 교체</td><td>루트에서 이벤트 위임</td><td>매 렌더 새 함수가 생겨도 DOM 조작 0회</td></tr>
               <tr><td>effect를 Patch 직후 동기 실행</td><td>화면을 그린 뒤 비동기 실행</td><td>테스트에서 결과를 바로 확인</td></tr>
               <tr><td>루트 컴포넌트 하나, <code>unmount</code> 없음</td><td>여러 루트, 마운트 해제</td><td>과제 범위 (상태는 루트에서만)</td></tr>
@@ -191,6 +192,7 @@
           <div class="card"><h3>key 있음·없음 비교</h3><p style="margin:0">같은 변경을 두 목록에 적용해, key가 없으면 입력값이 엉뚱한 줄로 가고 조작이 늘어나는 것을 직접 확인합니다.</p></div>
           <div class="card"><h3>구현 전에 설계를 반증</h3><p style="margin:0">설계를 먼저 시제품으로 돌려 "고친 게 없는데 변경이 생기는" 결함을 찾고, 반례 17건을 판정해 ADR 4개로 고친 뒤 구현했습니다.</p></div>
           <div class="card"><h3>요구사항 추적 하네스</h3><p style="margin:0">SRS(요구사항) → ADR(결정) → SDD(설계) → 코드 → 테스트가 이어지는지 스크립트가 검사하고, push마다 보고서를 PR 댓글로 올립니다.</p></div>
+          <div class="card"><h3>협력적 스케줄링 (성능 실험실)</h3><p style="margin:0">Diff를 5ms씩 나눠 실행하고 사이사이 메인 스레드를 양보합니다. 10,000개 목록을 처리하는 동안에도 입력이 막히지 않는지 동기 방식·통째 교체와 나란히 비교합니다. <a href="./src/pages/lab/index.html">실험해 보기 →</a></p></div>
           <div class="card"><h3>뮤테이션 테스트</h3><p style="margin:0">코드를 일부러 980군데 망가뜨려 테스트가 잡는지 확인했습니다. 79.4%에서 테스트를 보강해 85.7%로 올렸습니다.</p></div>
         </div>
       </div>
@@ -207,7 +209,7 @@
               <tr><td>G1 요구사항–설계 정합성</td><td>요구사항 ID가 설계에 빠짐없이 있는지, 폐기된 결정을 근거로 쓰지 않는지</td><td>✅</td></tr>
               <tr><td>G2 설계 검증</td><td>구현 전에 반례로 설계를 공격하고, 모든 반례를 사람이 판정했는지</td><td>✅ 17 / 17</td></tr>
               <tr><td>G3 구현 규칙</td><td>TypeScript strict, DOM 쓰기는 <code>patch.ts</code>만, 의존 방향, React 0</td><td>✅</td></tr>
-              <tr><td>G4 검증 항목</td><td>테스트·커버리지·뮤테이션·VT 증거·요구사항 사슬</td><td>✅ 49 / 49</td></tr>
+              <tr><td>G4 검증 항목</td><td>테스트·커버리지·뮤테이션·VT 증거·요구사항 사슬</td><td>✅ 51 / 51</td></tr>
             </tbody>
           </table>
         </div>

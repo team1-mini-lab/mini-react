@@ -13,6 +13,7 @@ export default defineConfig({
         main: resolve(root, 'index.html'),
         phase1: resolve(root, 'src/pages/phase1/index.html'),
         phase2: resolve(root, 'src/pages/phase2/index.html'),
+        lab: resolve(root, 'src/pages/lab/index.html'),
       },
     },
   },
