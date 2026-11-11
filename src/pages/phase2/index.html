@@ -9,7 +9,7 @@
   <body>
     <main class="layout">
       <section class="app-box">
-        <h2 class="box-title">Todo 앱</h2>
+        <h2 class="box-title">Todo 앱 <button id="show-components" type="button" class="c-toggle">🧩 컴포넌트 보기</button></h2>
         <div id="app-root"></div>
       </section>
       <section class="log-box">
@@ -23,6 +23,10 @@
     <script type="module">
       import { startPhase2 } from './main.ts';
       startPhase2(document);
+      document.getElementById('show-components')?.addEventListener('click', (e) => {
+        const on = document.body.classList.toggle('show-c');
+        e.currentTarget.textContent = on ? '🧩 컴포넌트 숨기기' : '🧩 컴포넌트 보기';
+      });
     </script>
   </body>
 </html>

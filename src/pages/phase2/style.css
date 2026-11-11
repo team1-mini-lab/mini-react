@@ -20,3 +20,10 @@ button { padding: 6px 10px; border: 1px solid var(--line); background: #fff; bor
 #debug h2 { font-size: 13px; margin: 0 0 4px; }
 #change-log { white-space: pre-wrap; font-size: 12px; background: #f2f4f8; padding: 8px; border-radius: 6px; min-height: 60px; overflow-wrap: anywhere; }
 .hint { color: var(--muted); font-size: 12px; }
+.c-toggle { margin-left: 8px; font-size: 13px; padding: 3px 10px; border-radius: 999px; }
+body.show-c [data-c] { position: relative; outline: 2px dashed rgba(43, 89, 195, .55); outline-offset: 2px; }
+body.show-c [data-c]::before { content: attr(data-c); position: absolute; top: -10px; right: 4px; z-index: 1; font: 600 11px/1.4 system-ui, sans-serif; color: #fff; background: #2b59c3; padding: 0 6px; border-radius: 4px; pointer-events: none; }
+body.show-c [data-c="TodoItem"] { outline-color: rgba(47, 158, 85, .7); }
+body.show-c [data-c="TodoItem"]::before { background: #2f9e55; }
+body.show-c #todo-app { outline-color: rgba(214, 59, 47, .6); outline-width: 3px; }
+body.show-c #todo-app::before { background: #d63b2f; top: -12px; left: 4px; right: auto; }
