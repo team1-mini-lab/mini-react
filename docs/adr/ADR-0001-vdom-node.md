@@ -6,7 +6,7 @@ status: accepted
 date: 2026-11-09
 decision-makers: [@ksomang ]
 consulted: [@hnjee @onekindalpha ]
-informed: [이름]
+informed: [팀원 전체]
 
 ---
 

@@ -4,7 +4,7 @@
 # Optional metadata
 status: accepted
 date: 2026-11-10
-decision-makers: [팀원 이름]
+decision-makers: [김은기]
 consulted: [Claude (설계 검토 반례 4)]
 informed: [팀원 전체]
 보완 대상: ADR-0006 3절 (a3)

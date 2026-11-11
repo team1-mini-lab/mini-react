@@ -3,16 +3,222 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini React</title>
+    <title>mini-react — React 없이 만든 Virtual DOM과 Hooks</title>
+    <meta name="description" content="Vanilla TypeScript로 직접 구현한 Virtual DOM · Diff · Patch와 Component · State · Hooks, 그리고 요구사항부터 테스트까지 추적하는 검증 하네스" />
     <style>
-      body { font: 16px/1.6 system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #222; }
-      a { display: block; padding: 12px 16px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; text-decoration: none; color: #2b59c3; }
+      :root { --bg: #f7f7f5; --panel: #fff; --line: #e2e2dd; --ink: #1d1d1b; --muted: #66665f; --accent: #2b59c3; --accent-soft: #e9efff; --warn: #fff6dc; --react: #e9efff; --browser: #eef6ec; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.65 system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+      a { color: var(--accent); }
+      .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+      header.hero { padding: 56px 0 32px; }
+      .hero h1 { margin: 0; font-size: clamp(28px, 5vw, 44px); line-height: 1.2; letter-spacing: -0.02em; }
+      .hero p.lead { margin: 14px 0 0; font-size: clamp(16px, 2.2vw, 19px); color: var(--muted); max-width: 720px; }
+      .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+      .btn { display: inline-block; padding: 11px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; border: 1px solid var(--accent); }
+      .btn.primary { background: var(--accent); color: #fff; }
+      .btn.ghost { background: #fff; color: var(--accent); }
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 8px 0 8px; }
+      .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+      .stat b { display: block; font-size: 24px; letter-spacing: -0.01em; }
+      .stat span { color: var(--muted); font-size: 13px; }
+      .note-small { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+      section { padding: 36px 0 8px; }
+      section h2 { font-size: 24px; margin: 0 0 6px; letter-spacing: -0.01em; }
+      section > .wrap > p.sub { margin: 0 0 18px; color: var(--muted); }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+      .card h3 { margin: 0 0 8px; font-size: 18px; }
+      .card ul { margin: 0; padding-left: 18px; }
+      .card li { margin: 4px 0; }
+      .card img { width: 100%; border-radius: 8px; border: 1px solid var(--line); margin-top: 12px; }
+      code { font: 0.9em ui-monospace, Menlo, Consolas, monospace; background: #f0f0ec; padding: 1px 5px; border-radius: 4px; }
+      .pipeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 0 6px; }
+      @media (max-width: 600px) { .pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      .step { border-radius: 8px; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); }
+      .step b { display: block; font-size: 15px; }
+      .step.react { background: var(--react); }
+      .step.browser { background: var(--browser); }
+      .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin: 4px 0 14px; }
+      .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid var(--line); }
+      .caveat { background: var(--warn); border: 1px solid #efdca3; border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
+      .caveat > b:first-child { display: block; margin-bottom: 4px; }
+      table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 15px; }
+      th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { background: #f3f3ef; font-size: 14px; }
+      tr:last-child td { border-bottom: 0; }
+      .table-scroll { overflow-x: auto; }
+      .table-scroll table { min-width: 600px; }
+      .gates { counter-reset: g; }
+      footer { padding: 40px 0 56px; color: var(--muted); font-size: 14px; }
+      footer .wrap { border-top: 1px solid var(--line); padding-top: 18px; }
+      @media (max-width: 600px) { header.hero { padding-top: 36px; } th, td { padding: 8px; } }
     </style>
   </head>
   <body>
-    <h1>Mini React</h1>
-    <p>React·JSX 없이 Vanilla TypeScript로 만든 Virtual DOM · Diff · Patch와 Component · State · Hooks.</p>
-    <a href="./src/pages/phase1/index.html">Phase 1 — Virtual DOM + Diff + Patch 검증 페이지</a>
-    <a href="./src/pages/phase2/index.html">Phase 2 — Component · State · Hooks (Todo)</a>
+    <header class="hero">
+      <div class="wrap">
+        <h1>React 없이 만든 미니 React</h1>
+        <p class="lead">Vanilla TypeScript로 <b>Virtual DOM · Diff · Patch</b>와 <b>Component · State · Hooks</b>를 직접 구현하고, 요구사항부터 테스트까지 끊김 없이 추적하는 <b>검증 하네스</b>로 동작을 증명했습니다.</p>
+        <div class="cta">
+          <a class="btn primary" href="./src/pages/phase1/index.html">Phase 1 검증 페이지 열기</a>
+          <a class="btn primary" href="./src/pages/phase2/index.html">Phase 2 Todo 앱 열기</a>
+          <a class="btn ghost" href="https://github.com/team1-mini-lab/mini-react">GitHub 저장소</a>
+        </div>
+        <div class="stats" style="margin-top:28px">
+          <div class="stat"><b>191 / 191</b><span>자동 테스트 통과</span></div>
+          <div class="stat"><b>49 / 49</b><span>검증 항목(VT) 증거</span></div>
+          <div class="stat"><b>44 / 44</b><span>요구사항 → 코드 → 테스트 사슬</span></div>
+          <div class="stat"><b>85.7%</b><span>뮤테이션 점수 (기준 70%)</span></div>
+          <div class="stat"><b>0</b><span>사용한 UI 프레임워크</span></div>
+        </div>
+        <p class="note-small">숫자는 push·PR마다 CI가 다시 계산하는 <a href="https://github.com/team1-mini-lab/mini-react/blob/main/docs/verification/runs/2026-11-11-final-report.md">검증 보고서</a> 값입니다.</p>
+      </div>
+    </header>
+
+    <section id="why">
+      <div class="wrap">
+        <h2>왜 React(Virtual DOM)가 필요할까</h2>
+        <p class="sub">JavaScript가 DOM을 바꾸면, 브라우저는 그 뒤로 화면을 다시 계산하고 그립니다. 바꾼 곳이 많을수록 이 뒷단의 일이 늘어납니다.</p>
+        <div class="pipeline" aria-label="상태 변경부터 화면 표시까지">
+          <div class="step react"><b>State 변경</b>setState · 클릭 · 입력</div>
+          <div class="step react"><b>새 Virtual DOM</b>컴포넌트 함수 실행</div>
+          <div class="step react"><b>Diff</b>이전 트리와 비교</div>
+          <div class="step react"><b>Patch</b>바뀐 노드만 DOM 수정</div>
+          <div class="step browser"><b>Style</b>스타일 계산</div>
+          <div class="step browser"><b>Layout</b>크기·위치 (Reflow)</div>
+          <div class="step browser"><b>Paint</b>픽셀 그리기 (Repaint)</div>
+          <div class="step browser"><b>Composite</b>레이어 합성 (GPU)</div>
+        </div>
+        <div class="legend"><span><i style="background:var(--react)"></i>우리 엔진(React)의 몫</span><span><i style="background:var(--browser)"></i>브라우저 렌더링 엔진의 몫</span></div>
+        <div class="cards">
+          <div class="card">
+            <h3>실제 DOM이 느린 이유</h3>
+            <p style="margin:0">DOM을 하나 바꿀 때마다 브라우저는 스타일을 다시 계산하고, 크기·위치가 바뀌면 <b>Layout(Reflow)</b>, 모양이 바뀌면 <b>Paint(Repaint)</b>를 다시 합니다. 화면 전체를 <code>innerHTML</code>로 갈아 끼우면 바뀌지 않은 요소까지 새로 만들어져 이 비용이 커지고, 입력값·커서·스크롤 같은 상태도 사라집니다.</p>
+          </div>
+          <div class="card">
+            <h3>우리 엔진이 줄이는 것</h3>
+            <ul>
+              <li><b>메인 스레드 작업</b>: setState를 여러 번 불러도 한 번만 렌더(Batching), 의존성이 같으면 재계산 생략(<code>useMemo</code>)</li>
+              <li><b>실제 DOM 변경 수</b>: Diff로 바뀐 노드만 찾아 Patch. 목록 100개 중 1개를 바꾸면 DOM 조작 1회</li>
+              <li>그 뒤의 Style → Layout → Paint → Composite는 <b>브라우저가 결정</b>합니다</li>
+            </ul>
+          </div>
+        </div>
+        <div class="caveat">
+          <b>Virtual DOM은 만능이 아닙니다</b>
+          Virtual DOM을 만들고 비교하는 데에도 비용이 들기 때문에, 항상 더 빠르거나 DOM 변경을 무조건 최소로 만드는 것은 아닙니다. 실제 성능은 UI 구조와 업데이트 방식에 따라 달라집니다. 그래서 이 프로젝트는 "빠르다"고 주장하는 대신 <b>DOM 조작 수와 렌더 횟수처럼 셀 수 있는 값</b>으로 확인합니다.
+        </div>
+      </div>
+    </section>
+
+    <section id="what">
+      <div class="wrap">
+        <h2>무엇을 만들었나</h2>
+        <p class="sub">두 단계로 나눠 구현했고, Phase 2는 Phase 1의 Diff·Patch를 수정 없이 그대로 다시 씁니다.</p>
+        <div class="cards">
+          <div class="card">
+            <h3>Phase 1 · Virtual DOM + Diff + Patch</h3>
+            <ul>
+              <li>실제 DOM ↔ Virtual DOM ↔ HTML 코드 변환 (공백 규칙, XSS 정제)</li>
+              <li>Diff: 6종 변경 목록, <b>key로 자식 짝짓기</b></li>
+              <li>Patch: 바뀐 노드만 적용. 실제 DOM을 바꾸는 파일은 <code>patch.ts</code> 하나 (lint로 강제)</li>
+              <li>State History: 뒤로가기·앞으로가기도 Diff·Patch로 반영</li>
+            </ul>
+            <img src="./docs/images/phase1-key-demo.png" alt="key가 있으면 입력값이 자기 항목을 따라가고 변경은 1개, key가 없으면 변경 3개" loading="lazy" />
+            <p style="margin:12px 0 0"><a href="./src/pages/phase1/index.html">검증 페이지에서 직접 고쳐 보기 →</a></p>
+          </div>
+          <div class="card">
+            <h3>Phase 2 · Component + State + Hooks</h3>
+            <ul>
+              <li><code>h()</code>로 화면 선언, 자식 컴포넌트는 props만 받는 순수 함수</li>
+              <li><code>useState</code> · <code>useEffect</code>(의존성·정리 함수) · <code>useMemo</code></li>
+              <li>잘못된 Hook 호출은 실행 중 오류로 잡음 (컴포넌트 밖·자식 안·개수 변화)</li>
+              <li>Batching: <code>queueMicrotask</code>로 모아 한 번에 렌더, 무한 루프는 50회에서 차단</li>
+            </ul>
+            <img src="./docs/images/phase2-todo.png" alt="Todo 앱에서 체크한 줄과 바뀐 숫자만 반짝이는 화면" loading="lazy" />
+            <p style="margin:12px 0 0"><a href="./src/pages/phase2/index.html">Todo 앱 써 보기 →</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="diff">
+      <div class="wrap">
+        <h2>Diff가 찾는 변경</h2>
+        <p class="sub">과제의 5가지 핵심 케이스에 <b>이동</b>을 더했습니다. key로 짝을 지으면 목록 순서가 바뀌어도 노드를 새로 만들지 않고 옮깁니다.</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>경우</th><th>변경</th><th>실제 DOM에 하는 일</th></tr></thead>
+            <tbody>
+              <tr><td>새로 생김</td><td>추가</td><td>새 노드를 만들어 제자리에 <code>insertBefore</code></td></tr>
+              <tr><td>없어짐</td><td>삭제</td><td><code>remove()</code></td></tr>
+              <tr><td>종류(글자↔태그)나 태그가 다름</td><td>교체</td><td>새로 만들어 <code>replaceWith</code></td></tr>
+              <tr><td>글자가 다름</td><td>글자 수정</td><td><code>nodeValue</code>만 바꿈</td></tr>
+              <tr><td>속성이 다름</td><td>속성 수정</td><td><code>setAttribute</code>/<code>removeAttribute</code>, <code>value</code>·<code>checked</code>는 지금 값도 맞춤</td></tr>
+              <tr><td>같은 key인데 자리가 다름</td><td>이동</td><td>기존 노드를 <code>insertBefore</code>로 옮김 (입력값이 따라감)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="diff-from-react">
+      <div class="wrap">
+        <h2>실제 React와 다른 점</h2>
+        <p class="sub">일부러 단순하게 만든 부분과 그 이유입니다.</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>우리 구현</th><th>실제 React</th><th>이유</th></tr></thead>
+            <tbody>
+              <tr><td>자식 컴포넌트를 <code>h()</code> 안에서 바로 펼쳐 순수 Virtual DOM만 남김</td><td>Fiber 트리에 컴포넌트 노드를 남김</td><td>자식이 상태 없는 순수 함수라 Phase 1 Diff를 그대로 씀</td></tr>
+              <tr><td>렌더링을 한 번에 끝까지 동기로 실행</td><td>작업을 나눠 메인 스레드를 양보할 수 있음 (Concurrent)</td><td>구현 범위. 큰 목록에서는 메인 스레드를 오래 잡을 수 있음</td></tr>
+              <tr><td>요소마다 고정 리스너 1개, 핸들러만 교체</td><td>루트에서 이벤트 위임</td><td>매 렌더 새 함수가 생겨도 DOM 조작 0회</td></tr>
+              <tr><td>effect를 Patch 직후 동기 실행</td><td>화면을 그린 뒤 비동기 실행</td><td>테스트에서 결과를 바로 확인</td></tr>
+              <tr><td>루트 컴포넌트 하나, <code>unmount</code> 없음</td><td>여러 루트, 마운트 해제</td><td>과제 범위 (상태는 루트에서만)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="edge">
+      <div class="wrap">
+        <h2>다른 팀과 다른 점</h2>
+        <div class="cards">
+          <div class="card"><h3>바뀐 곳 하이라이트</h3><p style="margin:0">Patch한 노드만 0.6초 반짝입니다. <code>element.animate()</code>를 써서 <code>class</code>·<code>style</code>을 건드리지 않으므로 DOM 조작 수 측정에 섞이지 않습니다.</p></div>
+          <div class="card"><h3>이전·새 트리 보기</h3><p style="margin:0">Diff 결과를 두 트리에 색으로 칠해 삭제·추가·교체·수정·이동을 한눈에 보여 줍니다.</p></div>
+          <div class="card"><h3>key 있음·없음 비교</h3><p style="margin:0">같은 변경을 두 목록에 적용해, key가 없으면 입력값이 엉뚱한 줄로 가고 조작이 늘어나는 것을 직접 확인합니다.</p></div>
+          <div class="card"><h3>구현 전에 설계를 반증</h3><p style="margin:0">설계를 먼저 시제품으로 돌려 "고친 게 없는데 변경이 생기는" 결함을 찾고, 반례 17건을 판정해 ADR 4개로 고친 뒤 구현했습니다.</p></div>
+          <div class="card"><h3>요구사항 추적 하네스</h3><p style="margin:0">SRS(요구사항) → ADR(결정) → SDD(설계) → 코드 → 테스트가 이어지는지 스크립트가 검사하고, push마다 보고서를 PR 댓글로 올립니다.</p></div>
+          <div class="card"><h3>뮤테이션 테스트</h3><p style="margin:0">코드를 일부러 980군데 망가뜨려 테스트가 잡는지 확인했습니다. 79.4%에서 테스트를 보강해 85.7%로 올렸습니다.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="verify">
+      <div class="wrap">
+        <h2>어떻게 검증했나</h2>
+        <p class="sub">"테스트가 통과한다"를 넘어, 요구사항 하나하나가 설계·코드·테스트로 이어지는지를 네 관문으로 확인합니다.</p>
+        <div class="table-scroll">
+          <table class="gates">
+            <thead><tr><th>관문</th><th>확인하는 것</th><th>결과</th></tr></thead>
+            <tbody>
+              <tr><td>G1 요구사항–설계 정합성</td><td>요구사항 ID가 설계에 빠짐없이 있는지, 폐기된 결정을 근거로 쓰지 않는지</td><td>✅</td></tr>
+              <tr><td>G2 설계 검증</td><td>구현 전에 반례로 설계를 공격하고, 모든 반례를 사람이 판정했는지</td><td>✅ 17 / 17</td></tr>
+              <tr><td>G3 구현 규칙</td><td>TypeScript strict, DOM 쓰기는 <code>patch.ts</code>만, 의존 방향, React 0</td><td>✅</td></tr>
+              <tr><td>G4 검증 항목</td><td>테스트·커버리지·뮤테이션·VT 증거·요구사항 사슬</td><td>✅ 49 / 49</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note-small">자세한 결과: <a href="https://github.com/team1-mini-lab/mini-react/blob/main/docs/verification/runs/2026-11-11-final-report.md">검증 보고서</a> · <a href="https://github.com/team1-mini-lab/mini-react/actions">CI 실행 기록</a> · <a href="https://github.com/team1-mini-lab/mini-react/tree/main/docs/adr">설계 결정(ADR)</a></p>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        team1-mini-lab · 김소망 · 김은기 · Hyunji Lee — TypeScript · Vite · Vitest · jsdom · Stryker · GitHub Actions (UI 프레임워크 없음)
+      </div>
+    </footer>
   </body>
 </html>

@@ -5,6 +5,8 @@ import { defineConfig } from 'vitest/config';
 const root = import.meta.dirname;
 
 export default defineConfig({
+  // GitHub Pages는 https://<org>.github.io/mini-react/ 아래에서 열리므로, 배포 빌드만 경로 앞에 저장소 이름을 붙인다
+  base: process.env.PAGES_BASE ?? '/',
   build: {
     rollupOptions: {
       input: {

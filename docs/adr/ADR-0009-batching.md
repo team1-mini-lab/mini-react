@@ -4,9 +4,9 @@
 
 status: accepted
 date: 2026-11-10
-decision-makers: [@ksomang]
-consulted: [@hnjee @onekindalpha]
-informed: [이름]
+decision-makers: [김은기]
+consulted: [@ksomang @hnjee]
+informed: [팀원 전체]
 
 ---
 
