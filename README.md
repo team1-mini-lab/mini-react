@@ -84,7 +84,7 @@ SRS는 v1.1 → v1.8로 개정됐습니다. 설계 검토에서 찾은 반례와
 
 ---
 
-## 구조
+## 구조 (폴더 의존 방향)
 
 ```mermaid
 flowchart LR
@@ -153,7 +153,7 @@ flowchart LR
 
 ## 어떻게 검증했나
 
-![검증 루프](docs/images/verify-loop.png)
+![AI 에이전트와 협업하는 검증 프로세스](docs/images/verify-loop.png)
 
 "테스트가 통과한다"를 넘어, **요구사항 하나하나가 설계·코드·테스트로 이어지는지**를 기계가 확인하게 만들었습니다. 표준은 IEEE 1012(V&V), ISO/IEC/IEEE 29148(요구사항), IEEE 1016(설계 기술)을 참고했습니다.
 
