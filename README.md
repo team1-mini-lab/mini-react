@@ -5,16 +5,15 @@
 [![verify](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml)
 [![pages](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml)
 
-**▶ 데모: https://team1-mini-lab.github.io/mini-react/**
+**▶ 데모: https://team1-mini-lab.github.io/mini-react/** — [Phase 1 검증 페이지](https://team1-mini-lab.github.io/mini-react/src/pages/phase1/index.html) · [Phase 2 Todo 앱](https://team1-mini-lab.github.io/mini-react/src/pages/phase2/index.html) · [성능 실험실](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)
 
-| [🧩 Phase 1 검증 페이지](https://team1-mini-lab.github.io/mini-react/src/pages/phase1/index.html) | [✅ Phase 2 Todo 앱](https://team1-mini-lab.github.io/mini-react/src/pages/phase2/index.html) | [⚡ 성능 실험실](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html) | [📋 최신 검증 결과](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml) |
-|:---:|:---:|:---:|:---:|
+**📋 [최신 검증 보고서](https://github.com/team1-mini-lab/mini-react/blob/verify-report/REPORT.md)** — push할 때마다 CI가 새로 만듭니다
 
 | 테스트 | VT(검증 항목) | 요구사항 추적 | 뮤테이션 점수 | 커버리지 (core · component) | 외부 UI 프레임워크 |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 | **202 / 202** | **51 / 51** | **44 / 44** | **85.7%** | **97% · 99%** | **0** |
 
-> 숫자는 `scripts/report.py`가 명령 결과로 만든 [검증 보고서 (2026-11-11 스냅샷)](docs/verification/runs/2026-11-11-final-report.md)의 값입니다. **최신 결과**는 push·PR마다 CI가 다시 계산해 [GitHub Actions의 verify 실행](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml)(각 실행의 Summary)과 PR 댓글에 올립니다.
+> 숫자는 [검증 보고서 (2026-11-11 스냅샷)](docs/verification/runs/2026-11-11-final-report.md) 기준입니다. 최신 값은 [최신 검증 보고서](https://github.com/team1-mini-lab/mini-react/blob/verify-report/REPORT.md)에 있습니다.
 
 ---
 
@@ -151,6 +150,8 @@ flowchart LR
 ---
 
 ## 어떻게 검증했나
+
+![검증 루프](docs/images/verify-loop.png)
 
 "테스트가 통과한다"를 넘어, **요구사항 하나하나가 설계·코드·테스트로 이어지는지**를 기계가 확인하게 만들었습니다. 표준은 IEEE 1012(V&V), ISO/IEC/IEEE 29148(요구사항), IEEE 1016(설계 기술)을 참고했습니다.
 
