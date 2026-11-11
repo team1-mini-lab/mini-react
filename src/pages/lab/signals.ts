@@ -99,8 +99,18 @@ export function startSignals(doc: Document = document, opts: { total?: number } 
     const res = { vdom: { compared, domWrites: vWrites }, signal: { compared: 0, domWrites: sWrites } };
     show('sig-card-vdom', res.vdom);
     show('sig-card-signal', res.signal);
+    // 바뀐 줄을 두 목록 모두 가운데로 스크롤하고 노랗게 표시한다
+    for (const root of [vRoot!, sRoot!]) {
+      const li = root.querySelectorAll('li')[i] as HTMLElement | undefined;
+      if (!li) continue;
+      root.scrollTop = li.offsetTop - root.clientHeight / 2;
+      root.querySelectorAll('li.picked').forEach((x) => x.classList.remove('picked'));
+      li.classList.add('picked');
+    }
+    const what = doc.getElementById('sig-what');
+    if (what) what.textContent = `바뀐 줄: 상품 ${i + 1} → ${prices[i].toLocaleString()}원`;
     return res;
   }
-  doc.getElementById('sig-run')?.addEventListener('click', () => changeOne());
+  doc.getElementById('sig-run')?.addEventListener('click', () => changeOne(Math.floor(Math.random() * total)));
   return { changeOne };
 }

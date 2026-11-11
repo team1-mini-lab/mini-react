@@ -52,3 +52,5 @@ details { margin-top: 20px; color: var(--muted); font-size: 14px; }
 .vrows { list-style: none; margin: 0; padding: 0; }
 .vrows li { height: 28px; line-height: 28px; padding: 0 10px; border-bottom: 1px solid #f0f0ec; white-space: nowrap; overflow: hidden; }
 .card .run { margin-top: 4px; }
+.vbox { position: relative; }
+.vrows li.picked { background: #fff3a3; font-weight: 700; }
