@@ -8,3 +8,4 @@ coverage/
 report/
 .stryker-tmp/
 report/
+archive/tmp/

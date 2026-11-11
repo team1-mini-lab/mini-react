@@ -147,15 +147,15 @@ describe('[VT-38] VNode → 실제 DOM (ADR-0003)', () => {
 });
 
 describe('[VT-46] 깊은 중첩 (TBD-09, ADR-0002 T9)', () => {
-  it('[VT-46][T9] 100겹 중첩도 오류 없이 변환된다', () => {
+  it('[VT-46][T9] 1,000겹 중첩도 오류 없이 변환된다 (TBD-09)', () => {
     let html = 'x';
-    for (let i = 0; i < 100; i++) html = `<div>${html}</div>`;
+    for (let i = 0; i < 1000; i++) html = `<div>${html}</div>`;
     let v = conv(html);
     let depth = 1;
     while (v.children[0]?.type === 'element') {
       v = v.children[0] as VElement;
       depth++;
     }
-    expect(depth).toBe(100);
+    expect(depth).toBe(1000);
   });
 });

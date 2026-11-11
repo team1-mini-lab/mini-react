@@ -86,7 +86,7 @@ Chosen options: **결정 1-A, 결정 2-3+, 결정 3-나, 결정 4-B**.
 | 3 | `type`이 다름 | **교체** | `vdom_to_dom`으로 만들어 → `dom.replaceWith` | ✗ |
 | 4 | 둘 다 태그, `tag`가 다름 | **교체** | 3과 같음 | ✗ |
 | 5 | 둘 다 글자, `text`가 다름 | **글자 수정** | `dom.nodeValue = 새 text` | ✗ (자식 없음) |
-| 6 | 둘 다 태그, `tag` 같음, `attrs` 다름 | **속성 수정** | 생기거나 바뀐 속성 `setAttribute`, 사라진 속성 `removeAttribute` | ○ |
+| 6 | 둘 다 태그, `tag` 같음, `attrs` 다름 | **속성 수정** | 생기거나 바뀐 속성 `setAttribute`, 사라진 속성 `removeAttribute`. `value`·`checked`는 지금 값(property)도 함께 바꾸되, 이미 같으면 건드리지 않는다 (2026-11-10 추가) | ○ |
 | 7 | 위 어디에도 안 걸림 | 변경 없음 | 없음 | 태그면 ○ |
 | + | 짝은 맞는데 자리가 다름 | **이동** | `insertBefore`로 제자리에 옮김 | 이동했는지와 상관없이 1~7번 결과를 따른다 |
 
@@ -97,6 +97,7 @@ Chosen options: **결정 1-A, 결정 2-3+, 결정 3-나, 결정 4-B**.
 - 자식 비교는 **같은 비교 함수를 자식 쌍마다 다시 부른다**(재귀).
 - 노드 하나 비교에서는 `key`를 보지 않는다. 짝이 정해졌다는 건 이미 key가 같다는 뜻이다.
 - **변경 종류는 6가지**: 추가, 삭제, 교체, 글자 수정, 속성 수정, 이동. (TBD-03)
+- **`value`·`checked` (2026-11-10 추가)**: 입력칸의 `value`와 체크박스의 `checked` 속성은 "처음 값"일 뿐이라, `setAttribute`만으로는 사용자가 이미 타이핑하거나 누른 **지금 값**이 바뀌지 않는다. 그래서 이 두 속성은 지금 값(`el.value`, `el.checked`)도 함께 바꾼다. 지금 값과 이미 같으면 건드리지 않는다. 같은 값을 다시 쓰면 커서가 끝으로 튈 수 있기 때문이다. Phase 2 Todo 앱에서 할 일을 추가한 뒤 입력칸을 비우거나(#44), 완료 체크를 상태와 맞출 때 필요하다. 이 브라우저 동작은 구현 때 테스트로 확인한다.
 
 ### 2. 자식 목록 짝짓기
 
@@ -271,7 +272,7 @@ Patch : 그 dict의 dom 키를 꺼내 실제 노드를 얻고 → nodeValue = "�
 ### 관련 미결 사항
 
 - TBD-02(테스트 영역 편집 방식): ADR-0006에서 정했다.
-- TBD-01(State History 구조): 기록 저장 방식과 뒤로·앞으로가기 흐름이 정해진다.
+- TBD-01(State History 구조): ADR-0008에서 정했다.
 - 위 A~E는 ADR-0005에서 정했다.
 
 ### 관련 자료
@@ -281,4 +282,12 @@ Patch : 그 dict의 dom 키를 꺼내 실제 노드를 얻고 → nodeValue = "�
 - 설계 과정: [미니 리액트 개발 일지 ㅡ Diff: 두 Virtual DOM 비교하기](https://eutopiaa.tistory.com/94)
 - 요구사항: [미니 리액트 프로젝트 ㅡ 요구사항 정리](https://eutopiaa.tistory.com/90) — 관련 ID: FR-03~FR-06, NFR-01, NFR-03, C-03, TBD-03, TBD-04
 - GitHub Issue: #21
+- `value`·`checked` 규칙 검토 과정: [미니 리액트 개발 일지 ㅡ 팀 설계 검토: Todo 페이지(#44)](https://eutopiaa.tistory.com/102)
 - 템플릿: [MADR - Full Template](https://adr.github.io/madr/#full-template)
+
+### 변경 이력
+
+| 날짜 | 내용 | 상태 |
+|---|---|---|
+| 2026-11-10 | 1절 노드 비교 표 6번과 설명에 `value`·`checked`의 지금 값(property) 규칙 추가 (#44) | 팀 재확인 완료 (2026-11-11, PR #54) |
+| 2026-11-10 | 관련 미결 사항의 TBD-01 문장을 ADR-0008 결정에 맞춰 갱신 | 결정 변경 없음 (문장 정리) |

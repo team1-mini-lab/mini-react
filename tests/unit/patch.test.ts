@@ -179,12 +179,12 @@ describe('[VT-46] 견고성 (ADR-0005 P10~P12, TA10)', () => {
     patch(frame, b, c);
     expect(equalScreen(screenOf(frame), c)).toBe(true);
   });
-  it('[VT-46][P11] 100겹 중첩의 가장 깊은 글자만 바뀌고 나머지 요소는 같은 객체', () => {
-    const deep = (x: string) => '<div>'.repeat(100) + x + '</div>'.repeat(100);
+  it('[VT-46][P11] 1,000겹 (TBD-09) 중첩의 가장 깊은 글자만 바뀌고 나머지 요소는 같은 객체', () => {
+    const deep = (x: string) => '<div>'.repeat(1000) + x + '</div>'.repeat(1000);
     const { frame, current } = mount(deep('x'));
-    const outer = frame.querySelectorAll('div')[50];
+    const outer = frame.querySelectorAll('div')[500];
     patch(frame, current, next(deep('y')));
-    expect(frame.querySelectorAll('div')[50]).toBe(outer);
+    expect(frame.querySelectorAll('div')[500]).toBe(outer);
     expect(frame.textContent).toBe('y');
   });
   it('[VT-46][P12] 추가·삭제·글자 수정이 동시에 → FR-01 기준 같음, 바뀌지 않은 요소는 같은 객체', () => {

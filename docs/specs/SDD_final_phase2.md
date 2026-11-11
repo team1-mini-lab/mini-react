@@ -39,12 +39,13 @@
 - **UI 프레임워크 0 (SRS `CON-01`)**: Todo 테스트 페이지(`pages/phase2`)도 React·JSX 없이 이 문서의 `h()`와 `render()`로만 만든다. JSX 문법은 쓰지 않으며 `h(...)` 호출로 화면을 적는다. 이 프로젝트의 `h`·`FunctionComponent`가 곧 "우리가 만든 React"이고, 그것으로 Todo 페이지를 그리는 것이 FR-23의 시연이다.
 - **Phase 1 엔진 재사용 (`C-08`, `SDD_final_phase1.md`)**: `update()`가 화면을 다시 그릴 때는 Phase 1의 `diff(this.vnode, next)`와 `applyPatch`를 **수정 없이 그대로** 사용한다. State History는 Phase 1 검증 페이지 전용이므로 Phase 2에서는 사용하지 않는다.
 
-### 1.2 실제 React와의 의도된 차이점 4가지 (발표·방어 포인트)
+### 1.2 실제 React와의 의도된 차이점 5가지 (발표·방어 포인트)
 
 1. **자식 컴포넌트 즉시 펼침 (`ADR-0015` 1절)**: 실제 React는 Fiber 트리에 컴포넌트 노드를 남기지만, 본 프로젝트는 자식이 무상태 순수 함수(`C-06`)이므로 `h()` 안에서 즉시 실행해 순수 `VElement` 트리로 펼친다. 덕분에 Diff는 Phase 1과 동일한 알고리즘을 쓴다.
 2. **요소별 고정 리스너 (`ADR-0015` 3절)**: 실제 React의 루트 이벤트 위임 대신, 각 요소에 이벤트 종류별 고정 `dispatch` 리스너 1개만 최초 부착하고 `el.__handlers` 객체만 교체한다.
 3. **동기적 Post-Patch Effect (`ADR-0010` 3절)**: 실제 React는 브라우저 페인트 이후 비동기로 실행하나, 테스트 단순성과 결정적 검증(`K10`)을 위해 `applyPatch` 직후 동기적으로 실행한다.
 4. **루트 컴포넌트 단 하나 & `unmount()` 없음 (`ADR-0015` 2절)**: `C-05` 범위와 단일 앱 구조에 맞춰 `mount()`와 `update()`만 둔다.
+5. **렌더링 도중 setter는 한 번 옛 값으로 그려짐 (`ADR-0009` 2절, 알려진 한계)**: 칸 값은 바로 바뀌고 다시 그리기만 다음 차례로 미뤄진다. 리액트는 그 자리에서 다시 렌더링한다.
 
 ---
 
@@ -218,9 +219,10 @@ export function depsChanged(prev: unknown[] | undefined, next: unknown[] | undef
   - `deps.length === 0` (`[]`): **최초 mount 후 1회만 실행** (`K8`)
   - `deps` 있음: `depsChanged(slot.deps, deps)`가 `true`일 때만 실행 (`K9`)
 - **실행 및 정리(`cleanup`, `g1`) 순서** (Patch 완료 직후):
-  1. 각 `effect` 슬롯에 대해 `try { ... } catch (err) { console.error(err); }` 로 개별 격리한다. (한 effect가 실패해도 나머지 effect는 계속 실행, `K14`).
-  2. 이전 `slot.cleanup` 함수가 있으면 먼저 호출한 뒤 비운다 (`K11`).
-  3. `const cleanup = slot.effect()` 실행 후, 반환값이 함수(`typeof cleanup === 'function'`)이면 `slot.cleanup = cleanup`에 저장한다.
+  리액트와 같은 순서로 두 단계로 나눈다 (2026-11-11 팀 결정, ADR-0010 3절):
+  1. **정리 단계**: 이번에 실행할 `effect` 칸을 앞에서부터 보며, 이전 `slot.cleanup`이 있으면 **모두** 먼저 호출하고 비운다 (`K11`).
+  2. **실행 단계**: 같은 칸들을 앞에서부터 다시 보며 `slot.effect()`를 실행하고, 반환값이 함수면 `slot.cleanup`에 저장한다 (`K15`: 정리 A → 정리 B → 실행 A → 실행 B).
+  3. 두 단계 모두 칸마다 `try/catch`로 따로 격리한다. effect나 정리 함수 하나가 실패해도 나머지는 계속 실행하고 `console.error`로 남긴다 (`K14`, `K15`). `TooManyRendersError`만 밖으로 나간다 (8.2).
   4. `unmount()`가 없으므로 정리 함수는 "다시 실행되기 직전"에만 호출된다.
 
 #### ④ `useMemo(factory, deps)` (`FR-18`, `K12`, `K13`)
@@ -350,7 +352,7 @@ export function flushSync(): void {
 | --- | --- | --- | --- |
 | Component & `events` (`ADR-0015`) | **`C1 ~ C10`** | 10 | `mount()` `.dom` 기록(`C1`), 무변경 `update()`(`C2`), `diff`+`applyPatch` 1회씩(`C3`), `h()` `key`/자식정리/자식펼침/`events`(`C4~C7`), 핸들러 최신화(`C8`), 리스너 무변경(`C9`), `t3` 컨테이너 복구(`C10`) |
 | Batching (`ADR-0009`) | **`B1 ~ B6`** | 6 | 핸들러/타이머 Batching(`B1`, `B2`), `flushSync()` 전후(`B3`), effect 50회 한계(`B4`), 클릭 60회 정상(`B5`), 렌더 중 setter 경고(`B6`) |
-| Hooks 동작 (`ADR-0010`) | **`K1 ~ K14`** | 14 | `useState` 초기값·유지·다중격리·동일값무시·함수형업데이트·setter정체성(`K1~K6`), `useEffect` 생략/`[]`/`[a]`/DOM순서/cleanup/에러격리(`K7~K11`, `K14`), `useMemo` 캐싱·결과반영(`K12`, `K13`) |
+| Hooks 동작 (`ADR-0010`) | **`K1 ~ K15`** | 15 | `useState` 초기값·유지·다중격리·동일값무시·함수형업데이트·setter정체성(`K1~K6`), `useEffect` 생략/`[]`/`[a]`/DOM순서/cleanup/에러격리(`K7~K11`, `K14`), `useMemo` 캐싱·결과반영(`K12`, `K13`) |
 | Hook 규칙 (`ADR-0010`) | **`HR1 ~ HR6`** | 6 | 핸들러(`HR1`), effect(`HR2`), 자식 컴포넌트(`HR3`) `HookCallError`; 개수·종류 순서 변경 `HookOrderError`(`HR4`, `HR5`); 오류 시 이전 DOM 유지(`HR6`) |
 | Todo App (`피드백 06`) | **`TD1 ~ TD11`** | 11 | key 삭제 1건(`TD1`), props에 key 미전달(`TD2`), input 초기화·커서 보존(`TD3`, `TD4`), checkbox `checked`(`TD5`), 3개 일괄 추가(`TD6`), `useMemo`/`useEffect` 선택 실행(`TD7`, `TD8`), 이중 카운터 동기(`TD9`), `input` 제외 하이라이트(`TD10`), `DebugPanel` 한 줄 요약(`TD11`) |
 
@@ -365,7 +367,7 @@ export function flushSync(): void {
 | `FR-14` | 같은 데이터는 항상 같은 값 (Lifting State Up) | 1.1, 3.1 | `TD9` |
 | `FR-15` | 재렌더 후 상태 값 유지 | 2.4 (`useState`) | `K2`, `K5` |
 | `FR-16` | 여러 상태 미혼선 + Hook 순서 규칙 | 2.4 (`hooks[]`, `HookOrderError`) | `K3`, `HR4~HR6` |
-| `FR-17` | `useEffect` (생략=매번, `[]`=1회, deps, `cleanup`) | 2.4 (`f1`, `g1`) | `K7~K11`, `K14`, `TD8` |
+| `FR-17` | `useEffect` (생략=매번, `[]`=1회, deps, `cleanup`) | 2.4 (`f1`, `g1`) | `K7~K11`, `K14`, `K15`, `TD8` |
 | `FR-18` | `useMemo` (의존성 같으면 재계산 생략) | 2.4 | `K12`, `K13`, `TD7` |
 | `NFR-01` | 변경 비례 최소 조작 (`events` 분리 + Batching) | 2.3, 2.5 | `C9`, `B1`, `TD1`, `TD6` |
 | `C-05 ~ C-08` | 함수형, `FunctionComponent(hooks,mount,update)`, 루트 State, Phase 1 재사용 | 1.1, 2.1, 2.2 | `C1~C10`, `HR3` |
@@ -406,7 +408,7 @@ export function flushSync(): void {
 | --- | --- | --- |
 | `tests/unit/h.test.ts` | VT-11 | C4, C5, C6, C7, TD2 |
 | `tests/unit/component.test.ts` | VT-10, VT-11 | C1, C2, C3, C8, C9, C10 |
-| `tests/unit/hooks.test.ts` | VT-12, VT-14, VT-15, VT-16 | K1~K14, HR1~HR6 |
+| `tests/unit/hooks.test.ts` | VT-12, VT-14, VT-15, VT-16 | K1~K15, HR1~HR6 |
 | `tests/unit/scheduler.test.ts` | VT-19 | B1~B6 |
 | `tests/integration/phase2.test.ts` | VT-13, VT-17 | TD1, TD3~TD11 |
 | 수동 체크리스트 (`docs/verification/checklist-phase2.md`) | VT-18 | TD10 (하이라이트 눈으로 확인) |
@@ -416,9 +418,9 @@ export function flushSync(): void {
 | # | 항목 | 지금 설계 | 열린 질문 |
 | --- | --- | --- | --- |
 | 1 | 모듈 순환 | **해소** (8.1) | `component/current.ts`로 분리. depcruise `no-circular` 통과 |
-| 2 | 렌더 중 setter (B6) | 경고 후 다음 microtask로 미룬다 | setter가 `slot.value`를 바로 바꾸므로 지금 렌더의 나머지 부분은 옛 값을 쓴다. 의도한 동작인지 |
+| 2 | 렌더 중 setter (B6) | **해소** (2026-11-11 팀 결정) | 지금 동작 유지. ADR-0009 2절에 "칸 값은 바로 바뀌고 다시 그리기만 미뤄져 한 번은 옛 값으로 그려진다"를 알려진 한계로 적음. 1.2 차이점 5번 |
 | 3 | (해소) mount 중 effect의 setter | ADR-0009 3절대로 `mount()`에서도 표시를 켠다 (2.5) | — |
-| 4 | effect 실행 순서 | 칸마다 cleanup → effect | React는 모든 cleanup을 먼저 실행한다. 차이를 1.2 "의도된 차이"에 넣을지 |
+| 4 | effect 실행 순서 | **해소** (2026-11-11 팀 결정) | 리액트와 같게 바꿈: 실행할 칸의 정리 함수 전부 → effect 전부 (ADR-0010 3절, K15). 2.4 ③ |
 | 5 | 이벤트 저장 위치 | **해소** | `el.__handlers` (Phase 1 `core/patch.ts`와 같은 이름) |
 
 ## 8. 구현하며 정한 것 (v1.2)
@@ -463,6 +465,12 @@ export function flushSync(): void {
 - `tsc --noEmit`, `eslint src`, `depcruise`(21개 모듈, 순환 0), `check:stack` 통과.
 - Vitest 전체 173개 통과: `h.test` 7, `component.test` 7, `hooks.test` 21, `scheduler.test` 6, `phase2.test` 12.
 - 커버리지(문장): component 99%, core 97%.
+
+### 8.8 팀 결정 반영 (2026-11-11, PR #54 리뷰)
+
+- 7장 열린 항목 2·4번을 결정했다. ADR-0009·0010·0015를 accepted로 확정했다.
+- effect 실행 순서를 리액트와 같게 바꿨다(2.4 ③, `runEffects`를 정리 단계와 실행 단계로 나눔, 오류 격리는 `guard()` 하나로 두 단계에 같이 씀). 테스트 K15 3개 추가.
+- 렌더링 도중 setter는 코드를 바꾸지 않고 알려진 한계로 적었다(1.2 5번, ADR-0009 2절).
 
 ---
 

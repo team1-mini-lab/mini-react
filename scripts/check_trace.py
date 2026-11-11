@@ -13,6 +13,8 @@
   [설계] SDD 추적표에 행이 있고, 설계 요소에 부록 A의 함수 이름이 있다
   [코드] 그 함수가 부록 A에 적힌 파일에서 export 되어 있다
   [테스트] 그 요구사항의 VT 중 하나 이상이 자동 테스트 이름에 있다 (수동·검토 VT만 있는 요구사항은 '수동')
+           자동 테스트 대신 하네스 스크립트가 검사하는 VT는 그 스크립트가 통과하면 '검사 ✓' (환경 변수 VT_SCRIPT_PASS, report.py가 넣음)
+           브라우저 체크리스트에서 `- [x] VT-xx`로 확인된 VT는 '수동 ✓'
   [연결] 그 테스트 파일이 그 코드 파일을 import 한다 (테스트가 엉뚱한 코드를 검사하지 않는지)
   [결과] (vitest 결과 파일이 있으면) 그 VT 테스트가 모두 통과
 
@@ -124,12 +126,18 @@ if RESULTS and os.path.exists(RESULTS):
 vt_pass -= vt_fail
 
 # ---- SRS: 수동·검토 VT 구분 (SDD 테스트 위치 표) ----
-manual_vts = set()
+manual_vts, script_vts = set(), set()
 for ph, doc in DOCS.items():
     loc = section(read(doc), "### 9.4" if ph == "1" else "### 6.2", "## 10." if ph == "1" else "## 7.")
     for r in rows(loc):
-        if len(r) > 1 and re.search(r"체크리스트|코드 검토|check_|CI 로그", r[0]):
+        if len(r) > 1 and re.search(r"체크리스트|코드 검토|check_|check:|lint|CI 로그", r[0]):
             manual_vts |= ids(r[1])
+        if len(r) > 1 and re.search(r"check_|check:|lint|CI 로그", r[0]):
+            script_vts |= ids(r[1])
+script_pass = set(filter(None, os.environ.get("VT_SCRIPT_PASS", "").split(","))) & script_vts
+checked_vts = set()
+for doc in ("docs/verification/checklist-phase1.md", "docs/verification/checklist-phase2.md"):
+    checked_vts |= {f"VT-{n}" for n in re.findall(r"^- \[x\] VT-(\d{2})", read(doc), re.M | re.I)}
 srs = read("docs/SRS_fixed.md")
 srs_vts = {f"VT-{n}" for n in re.findall(r"^\|\s*VT-(\d{2})\s*\|", srs, re.M)}
 
@@ -170,9 +178,9 @@ for ph in (["1", "2"] if PHASE is None else [PHASE]):
             "ADR": "—" if not adrs else ("✓" if all(x == "accepted" for x in a_state) and not (set(adrs) & adr_recheck) else "△"),
             "설계": "✓" if funcs else ("—" if not auto_vts else "△"),
             "코드": "—" if not funcs else ("✓" if not missing_code else "✗"),
-            "테스트": "수동" if not auto_vts else ("✓" if tests else "✗"),
+            "테스트": ("검사 ✓" if set(vts) & script_pass else "수동 ✓" if vts and set(vts) <= (checked_vts | script_pass) else "수동") if not auto_vts else ("✓" if tests else "✗"),
             "연결": "—" if not (auto_vts and files) else ("✓" if linked else "✗"),
-            "결과": "—" if not auto_vts else ("✗" if set(auto_vts) & vt_fail else "✓" if RESULTS and set(auto_vts) <= vt_pass else "?"),
+            "결과": ("✓" if vts and set(vts) <= (checked_vts | script_pass) else "—") if not auto_vts else ("✗" if set(auto_vts) & vt_fail else "✓" if RESULTS and set(auto_vts) <= vt_pass else "?"),
         }
         broken = [k for k, v in st.items() if v == "✗"]  # ADR △(proposed·재확인)는 끊김이 아니라 '승인 대기'로 본다
         why = "; ".join(filter(None, [

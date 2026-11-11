@@ -2,7 +2,7 @@
 
 # Optional metadata
 
-status: proposed
+status: accepted
 date: 2026-11-10
 decision-makers: [@ksomang]
 consulted: [@hnjee @onekindalpha]
@@ -145,8 +145,8 @@ Chosen option: **e2**, because 기존 일관성을 유지하기 위해서다. `a
 
 | 대상 | 변경 | 상태 |
 |---|---|---|
-| ADR-0001 | 선택 키 `events`, 네 번째 무리 "동작", 비교 표 `events` 열, `events` 규칙 추가 | 팀 재확인 필요 |
-| ADR-0005 6절 | 복구 함수가 컨테이너를 인자로 받도록 일반화 | 팀 재확인 필요 |
+| ADR-0001 | 선택 키 `events`, 네 번째 무리 "동작", 비교 표 `events` 열, `events` 규칙 추가 | 팀 재확인 완료 (2026-11-11, PR #54) |
+| ADR-0005 6절 | 복구 함수가 컨테이너를 인자로 받도록 일반화 | 팀 재확인 완료 (2026-11-11, PR #54) |
 
 ### 관련 자료
 

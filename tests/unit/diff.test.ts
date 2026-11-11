@@ -101,10 +101,10 @@ describe('[VT-36] key 짝짓기 (ADR-0004 2절, FR-09)', () => {
 });
 
 describe('[VT-46] 깊은 중첩 (ADR-0005 D14)', () => {
-  it('[VT-46][D14] 100겹 div 안의 가장 깊은 글자 변경 → text 1개, target = 가장 깊은 이전 객체', () => {
+  it('[VT-46][D14] 1,000겹 div (TBD-09) 안의 가장 깊은 글자 변경 → text 1개, target = 가장 깊은 이전 객체', () => {
     const deep = (text: string) => {
       let v: VElement = h('div', null, text);
-      for (let i = 0; i < 99; i++) v = h('div', null, v);
+      for (let i = 0; i < 999; i++) v = h('div', null, v);
       return v;
     };
     const a = deep('x');

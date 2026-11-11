@@ -194,6 +194,69 @@ describe('[VT-14] useEffect (FR-18, FR-19, f1·g1)', () => {
   });
 });
 
+describe('[VT-14] effect 실행 순서 (ADR-0010 3절, 2026-11-11)', () => {
+  it('[VT-14][K15] effect 두 개가 다시 실행되면 정리 A → 정리 B → 실행 A → 실행 B', () => {
+    const log: string[] = [];
+    let set!: SetState<number>;
+    mount(() => {
+      const [n, s] = useState(0);
+      set = s;
+      useEffect(() => {
+        log.push(`실행 A${n}`);
+        return () => log.push(`정리 A${n}`);
+      }, [n]);
+      useEffect(() => {
+        log.push(`실행 B${n}`);
+        return () => log.push(`정리 B${n}`);
+      }, [n]);
+      return h('p');
+    });
+    log.length = 0;
+    set(1);
+    flushSync();
+    expect(log).toEqual(['정리 A0', '정리 B0', '실행 A1', '실행 B1']);
+  });
+  it('[VT-14][K15][K14] 정리 함수 하나가 오류여도 나머지 정리와 실행은 계속된다', () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const log: string[] = [];
+    let set!: SetState<number>;
+    mount(() => {
+      const [n, s] = useState(0);
+      set = s;
+      useEffect(() => {
+        log.push(`실행 A${n}`);
+        return () => {
+          throw new Error('정리 실패');
+        };
+      }, [n]);
+      useEffect(() => {
+        log.push(`실행 B${n}`);
+        return () => log.push(`정리 B${n}`);
+      }, [n]);
+      return h('p');
+    });
+    log.length = 0;
+    set(1);
+    flushSync();
+    expect(log).toEqual(['정리 B0', '실행 A1', '실행 B1']);
+    expect(err).toHaveBeenCalledTimes(1);
+  });
+  it('[VT-14][K15] 실행하지 않는 effect의 정리 함수는 부르지 않는다', () => {
+    const log: string[] = [];
+    let set!: SetState<number>;
+    mount(() => {
+      const [n, s] = useState(0);
+      set = s;
+      useEffect(() => () => log.push('정리 고정'), []);
+      useEffect(() => () => log.push(`정리 n${n}`), [n]);
+      return h('p');
+    });
+    set(1);
+    flushSync();
+    expect(log).toEqual(['정리 n0']);
+  });
+});
+
 describe('[VT-15] useMemo (FR-20)', () => {
   it('[VT-15][K12] 같은 deps로 여러 번 재렌더해도 factory는 1번', () => {
     const factory = vi.fn(() => 42);

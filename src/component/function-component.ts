@@ -90,25 +90,36 @@ export class FunctionComponent<P extends object = Record<string, unknown>> imple
     this.opts.onCommit?.(this as unknown as FunctionComponent<never>);
   }
 
-  /** 7단계: Patch 직후 동기 실행. 칸마다 cleanup → effect, 오류는 칸마다 격리 (K10, K11, K14) */
+  /**
+   * 7단계: Patch 직후 동기 실행 (K10). 실제 리액트와 같은 순서로 두 단계로 나눈다 (ADR-0010 3절, 2026-11-11):
+   * ① 실행할 칸의 이전 정리 함수를 모두 부른다 (g1, K11) → ② 같은 칸의 effect를 모두 실행한다 (K15).
+   * 두 단계 모두 칸마다 오류를 따로 잡는다 (K14). 무한 루프 오류(B4)만 밖으로 내보낸다.
+   */
   private runEffects(): void {
-    for (const s of this.hooks) {
-      if (s.kind !== 'effect' || !s.shouldRun) continue;
+    const due = this.hooks.filter((s): s is Extract<HookSlot, { kind: 'effect' }> => s.kind === 'effect' && s.shouldRun);
+    for (const s of due) {
       s.shouldRun = false;
-      try {
-        if (s.cleanup) {
-          const f = s.cleanup;
-          s.cleanup = undefined;
-          f();
-        }
+      const f = s.cleanup;
+      s.cleanup = undefined;
+      if (f) this.guard(f, '정리 함수');
+    }
+    for (const s of due) {
+      this.guard(() => {
         const r = s.effect();
         if (typeof r === 'function') s.cleanup = r;
-      } catch (err) {
-        if (err instanceof TooManyRendersError) throw err; // B4: 무한 루프는 숨기지 않는다
-        console.error('[effect] 실행 중 오류가 나서 이 effect만 건너뜁니다:', err);
-      }
+      }, 'effect');
     }
   }
+
+  private guard(work: () => void, what: string): void {
+    try {
+      work();
+    } catch (err) {
+      if (err instanceof TooManyRendersError) throw err; // B4: 무한 루프는 숨기지 않는다
+      console.error(`[effect] ${what} 실행 중 오류가 나서 이것만 건너뜁니다:`, err);
+    }
+  }
+
 }
 
 export function render<P extends object>(fn: Component<P>, props: P, container: Element, opts?: RenderOptions): FunctionComponent<P> {

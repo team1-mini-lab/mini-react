@@ -2,7 +2,7 @@
 
 # Optional metadata
 
-status: proposed
+status: accepted
 date: 2026-11-10
 decision-makers: [@ksomang]
 consulted: [@hnjee @onekindalpha]
@@ -90,13 +90,13 @@ App 실행 중
 
 **effect 실행 순서** (렌더링 한 번이 끝난 뒤):
 
-effect는 `update()`(ADR-0015)의 Patch, `dom` 복사·기록, 핸들러 바꿔 끼우기가 모두 끝난 뒤 실행한다. Patch 실패 복구(ADR-0005 6절)가 일어나도 실행한다. effect 칸을 앞에서부터 차례로 보며:
+effect는 `update()`(ADR-0015)의 Patch, `dom` 복사·기록, 핸들러 바꿔 끼우기가 모두 끝난 뒤 실행한다. Patch 실패 복구(ADR-0005 6절)가 일어나도 실행한다. 실제 리액트와 같은 순서로 두 단계로 나눈다(2026-11-11 팀 결정):
 
-1. 이번 렌더링에서 실행하기로 정해진 effect인가? (위 표)
-2. 그렇다면, 이전 실행이 남긴 정리 함수가 있으면 먼저 부른다 (g1).
-3. effect를 실행하고, 돌려준 값이 함수면 정리 함수로 칸에 저장한다.
+1. **정리 단계**: 이번 렌더링에서 실행하기로 정해진 effect 칸(위 표)을 앞에서부터 보며, 이전 실행이 남긴 정리 함수를 **모두** 먼저 부른다 (g1).
+2. **실행 단계**: 같은 칸들을 앞에서부터 다시 보며 effect를 실행하고, 돌려준 값이 함수면 정리 함수로 칸에 저장한다.
 
-- effect 하나가 오류를 내도 다른 effect는 계속 실행하고, 오류는 `console.error`로 남긴다.
+- 그래서 effect가 여러 개일 때 어떤 effect도 다른 effect의 옛 정리 함수보다 먼저 실행되지 않는다(예: 타이머를 정리한 뒤 새 타이머를 건다).
+- 두 단계 모두 칸마다 오류를 따로 잡는다. effect나 정리 함수 하나가 오류를 내도 나머지는 계속 실행하고, 오류는 `console.error`로 남긴다 (K14).
 - 정리 함수는 "다시 실행하기 직전"에만 부른다. `unmount()`가 없으므로(ADR-0015) 컴포넌트가 내려갈 때 부르는 경우는 없다.
 - effect는 Patch 직후 동기적으로 실행한다. 실제 리액트는 브라우저가 화면을 그린 뒤 조금 늦게 실행한다. "실제 리액트와의 차이점"으로 설명한다.
 
@@ -150,6 +150,7 @@ effect는 `update()`(ADR-0015)의 Patch, `dom` 복사·기록, 핸들러 바꿔 
 | K12 | `useMemo(spy, [a])`, `a` 그대로 다시 렌더링 → `a` 변경 | spy 호출 1번 → 2번 | FR-18 |
 | K13 | useMemo 결과를 같은 렌더링 안에서 화면에 씀 | 화면에 계산 결과가 보임 | FR-18 |
 | K14 | effect 두 개 중 첫 번째가 오류 | 두 번째도 실행되고 `console.error` 1번 | 3절 |
+| K15 | 정리 함수를 돌려주는 effect 두 개, 둘 다 다시 실행 | 정리 A → 정리 B → 실행 A → 실행 B 순서. 정리 함수 하나가 오류여도 나머지 정리·실행은 계속 | 3절 |
 | HR1 | 버튼 핸들러 안에서 `useState` | `HookCallError` | 4절 |
 | HR2 | effect 안에서 `useState` | `HookCallError` | 4절 |
 | HR3 | 자식 컴포넌트 안에서 `useState` | `HookCallError` (루트 칸을 쓰지 않음) | 4절, C-06 |
@@ -211,3 +212,9 @@ effect는 `update()`(ADR-0015)의 Patch, `dom` 복사·기록, 핸들러 바꿔 
 - 요구사항: [미니 리액트 프로젝트 ㅡ 요구사항 정리](https://eutopiaa.tistory.com/90) — 관련 ID: FR-15~FR-18, C-05~C-07
 - GitHub Issue: #39, #40, #41, #43
 - 템플릿: [MADR - Full Template](https://adr.github.io/madr/#full-template)
+
+### 변경 이력
+
+| 날짜 | 내용 | 상태 |
+|---|---|---|
+| 2026-11-11 | 3절 effect 실행 순서를 리액트와 같게(정리 전부 → 실행 전부) 바꾸고 K15 추가, accepted로 확정 | 팀 승인 (2026-11-11, PR #54) |

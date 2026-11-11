@@ -76,7 +76,7 @@ R["test"] = sh("npx vitest run --reporter=default --reporter=json --outputFile=r
 R["coverage"] = npm("test:coverage")
 # 로컬 기기처럼 한 번 실행 시간이 짧으면 파일별로 나눠 돌린 결과를 합친다 (MUTATION_REUSE=1, scripts/merge_mutation.py)
 R["mutation"] = sh("python3 scripts/merge_mutation.py", "mutation") if os.environ.get("MUTATION_REUSE") else npm("test:mutation")
-os.environ["VT_SCRIPT_PASS"] = ",".join(v for v, ok in (("VT-23", R["check_stack"]["rc"] == 0), ("VT-35", R["test"]["rc"] == 0)) if ok)  # VT-35: jsdom 스위트 통과
+os.environ["VT_SCRIPT_PASS"] = ",".join(v for v, ok in (("VT-23", R["check_stack"]["rc"] == 0), ("VT-35", R["test"]["rc"] == 0), ("VT-22", R["lint"]["rc"] == 0 and R["check_arch"]["rc"] == 0)) if ok)  # VT-35: jsdom 스위트 통과
 R["check_vt"] = sh("python3 scripts/check_vt_tests.py --quiet --results report/vitest.json --json report/vt.json", "check-vt")
 R["check_trace"] = sh("python3 scripts/check_trace.py --results report/vitest.json --json report/trace.json", "check-trace")
 
@@ -214,7 +214,7 @@ w(f"- 열린 설계 항목: Phase 1 {open1}개 (SDD 11장), Phase 2 {open2}개 (
 w("")
 w("## 3. 정합성 사슬 (SRS → ADR → SDD → 코드 → VT)")
 w("")
-w("✓ 이어짐 · ✗ 끊김 · △ ADR 승인 대기 또는 설계 칸에 함수 이름 없음 · — 해당 없음 · 수동 = 수동·검토 VT만 있음 · ? 결과 미확인")
+w("✓ 이어짐 · ✗ 끊김 · △ ADR 승인 대기 또는 설계 칸에 함수 이름 없음 · — 해당 없음 · 검사 ✓ = 하네스 스크립트(check:stack·lint·check:arch·jsdom 실행)가 통과 · 수동 ✓ = 브라우저 체크리스트에서 확인 · 수동 = 아직 확인 안 된 수동·검토 VT · ? 결과 미확인")
 w("")
 w("| 요구사항 | ADR | 설계 | 코드 | 테스트 | 연결 | 결과 | 끊긴 곳 | 근거 ADR · 함수 · 테스트 |")
 w("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")

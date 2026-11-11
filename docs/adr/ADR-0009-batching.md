@@ -2,7 +2,7 @@
 
 # Optional metadata
 
-status: proposed
+status: accepted
 date: 2026-11-10
 decision-makers: [@ksomang]
 consulted: [@hnjee @onekindalpha]
@@ -56,6 +56,7 @@ Chosen option: **b1**, because 구현은 20줄쯤이고 테스트에서 화면�
 ### 2. 렌더링 도중의 setter
 
 - 컴포넌트 본문(렌더링 도중)에서 setter를 부르면 다음 차례로 미루고 `console.warn`으로 경고한다.
+- **알려진 한계 (실제 리액트와의 차이, 2026-11-11 팀 결정)**: 렌더링 도중 setter를 부르면 칸의 값은 바로 바뀌고 다시 그리기만 미뤄진다. 그래서 그 렌더링은 한 번 옛 값으로 그려지고, 다음 차례에 새 값으로 다시 그려진다. 개발자가 실수했을 때만 생기는 경우이고, 조건 없이 매번 부르는 실수는 3절의 50회 안전장치가 잡는다. 오류로 막거나 그 자리에서 다시 렌더링하는 방법은 이 ADR과 `renderTree`를 바꿔야 해서 택하지 않았다.
 
 ### 3. 반복 실행 안전장치
 
@@ -127,3 +128,9 @@ setter를 부르거나 클릭한 뒤 화면·상태를 확인하는 테스트는
 - 요구사항: [미니 리액트 프로젝트 ㅡ 요구사항 정리](https://eutopiaa.tistory.com/90) — 관련 ID: FR-11, NFR-01, TBD-05
 - GitHub Issue: #42
 - 템플릿: [MADR - Full Template](https://adr.github.io/madr/#full-template)
+
+### 변경 이력
+
+| 날짜 | 내용 | 상태 |
+|---|---|---|
+| 2026-11-11 | 2절에 렌더링 도중 setter의 알려진 한계 추가, accepted로 확정 | 팀 승인 (2026-11-11, PR #54) |
