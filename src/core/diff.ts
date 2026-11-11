@@ -18,12 +18,23 @@ export interface DiffResult {
 }
 
 export function diff(oldV: VNode, newV: VNode): DiffResult {
-  const out: DiffResult = { changes: [], pairs: [] };
-  diffNode(oldV, newV, out);
+  const { out, steps } = diffSteps(oldV, newV);
+  while (!steps.next().done); // 동기: 끝까지 한 번에
   return out;
 }
 
-function diffNode(o: VNode, n: VNode, out: DiffResult): void {
+/**
+ * Diff를 노드 하나씩 진행하는 단계(generator)로 돌려준다 (ADR-0020).
+ * `diff()`는 이것을 끝까지 한 번에 돌리고, `core/slice.ts`의 `diffSliced()`는 시간을 나눠 돌린다.
+ * 두 방식이 같은 코드를 쓰므로 변경 목록이 항상 같다 (SL1).
+ */
+export function diffSteps(oldV: VNode, newV: VNode): { out: DiffResult; steps: Generator<void, void, void> } {
+  const out: DiffResult = { changes: [], pairs: [] };
+  return { out, steps: diffNode(oldV, newV, out) };
+}
+
+function* diffNode(o: VNode, n: VNode, out: DiffResult): Generator<void, void, void> {
+  yield; // 노드 하나 = 작업 단위 하나 (여기서 멈췄다가 이어서 할 수 있다)
   // 4.2 노드 하나 비교: type → tag → text → attrs
   if (o.type !== n.type || (o.type === 'element' && o.tag !== (n as VElement).tag)) {
     out.changes.push({ kind: 'replace', target: o, node: n }); // D4·D5, pairs 제외, 자식 비교 안 함
@@ -40,7 +51,7 @@ function diffNode(o: VNode, n: VNode, out: DiffResult): void {
   for (const [k, v] of Object.entries(ne.attrs)) if (o.attrs[k] !== v) set[k] = v;
   for (const k of Object.keys(o.attrs)) if (!Object.prototype.hasOwnProperty.call(ne.attrs, k)) remove.push(k);
   if (Object.keys(set).length || remove.length) out.changes.push({ kind: 'attrs', target: o, set, remove });
-  diffChildren(o, ne, out);
+  yield* diffChildren(o, ne, out);
 }
 
 function hasDuplicateKeys(list: VNode[]): boolean {
@@ -53,7 +64,7 @@ function hasDuplicateKeys(list: VNode[]): boolean {
   return false;
 }
 
-function diffChildren(op: VElement, np: VElement, out: DiffResult): void {
+function* diffChildren(op: VElement, np: VElement, out: DiffResult): Generator<void, void, void> {
   const oc = op.children;
   const nc = np.children;
   const match = new Map<VNode, VNode>(); // 새 자식 → 짝 이전 자식
@@ -104,6 +115,6 @@ function diffChildren(op: VElement, np: VElement, out: DiffResult): void {
       working.splice(working.indexOf(po), 1);
       working.splice(i, 0, po);
     }
-    diffNode(po, c, out);
+    yield* diffNode(po, c, out);
   }
 }

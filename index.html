@@ -3,16 +3,87 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini React</title>
+    <title>mini-react</title>
+    <meta name="description" content="React 없이 직접 만든 Virtual DOM · Diff · Patch와 Hooks" />
     <style>
-      body { font: 16px/1.6 system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #222; }
-      a { display: block; padding: 12px 16px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; text-decoration: none; color: #2b59c3; }
+      :root { --bg: #f7f7f5; --panel: #fff; --line: #e2e2dd; --ink: #1d1d1b; --muted: #77776f; --accent: #2b59c3; --react: #e3ebff; --browser: #e5f3e1; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif; }
+      a { color: inherit; text-decoration: none; }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+      header { padding: 56px 0 28px; text-align: center; }
+      h1 { margin: 0; font-size: clamp(30px, 6vw, 48px); letter-spacing: -0.02em; }
+      .tag { margin: 10px 0 0; color: var(--muted); font-size: 18px; }
+      .go { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 28px 0 8px; }
+      .go a { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: block; transition: transform .15s, box-shadow .15s; }
+      .go a:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(0,0,0,.07); }
+      .go .icon { font-size: 30px; }
+      .go b { display: block; font-size: 19px; margin-top: 6px; }
+      .go span { color: var(--muted); font-size: 14px; }
+      .go img { width: 100%; height: 130px; object-fit: cover; object-position: top left; border-radius: 8px; border: 1px solid var(--line); margin-top: 12px; }
+      h2 { text-align: center; font-size: 22px; margin: 48px 0 16px; }
+      .flow { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
+      .flow div { padding: 10px 14px; border-radius: 10px; font-weight: 600; font-size: 15px; }
+      .flow .r { background: var(--react); } .flow .b { background: var(--browser); }
+      .flow i { color: var(--muted); font-style: normal; }
+      .legend { text-align: center; color: var(--muted); font-size: 14px; margin-top: 10px; }
+      .legend span::before { content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin: 0 6px 0 14px; vertical-align: -1px; }
+      .legend .r::before { background: var(--react); } .legend .b::before { background: var(--browser); }
+      .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .box { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; text-align: center; }
+      .box .big { font-size: 34px; font-weight: 700; }
+      .box .lbl { color: var(--muted); font-size: 14px; }
+      .good { color: #1f7a3a; } .bad { color: #b42318; }
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+      .stats div { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; text-align: center; }
+      .stats b { display: block; font-size: 24px; }
+      .stats span { color: var(--muted); font-size: 13px; }
+      .note { text-align: center; color: var(--muted); font-size: 14px; margin: 12px 0 0; }
+      footer { text-align: center; color: var(--muted); font-size: 14px; padding: 48px 0 56px; }
+      footer a { color: var(--accent); margin: 0 8px; }
+      @media (max-width: 600px) { .vs { grid-template-columns: 1fr; } header { padding-top: 36px; } }
     </style>
   </head>
   <body>
-    <h1>Mini React</h1>
-    <p>React·JSX 없이 Vanilla TypeScript로 만든 Virtual DOM · Diff · Patch와 Component · State · Hooks.</p>
-    <a href="./src/pages/phase1/index.html">Phase 1 — Virtual DOM + Diff + Patch 검증 페이지</a>
-    <a href="./src/pages/phase2/index.html">Phase 2 — Component · State · Hooks (Todo)</a>
+    <div class="wrap">
+      <header>
+        <h1>React 없이 만든 미니 React</h1>
+        <p class="tag">바뀐 곳만 고치는 화면, 직접 구현했습니다</p>
+      </header>
+
+      <nav class="go">
+        <a href="./src/pages/phase1/index.html"><div class="icon">🧩</div><b>Phase 1</b><span>코드를 고치고 Patch</span><img src="./docs/images/phase1-patch.png" alt="Phase 1 검증 페이지" loading="lazy" /></a>
+        <a href="./src/pages/phase2/index.html"><div class="icon">✅</div><b>Phase 2</b><span>Hooks로 만든 Todo</span><img src="./docs/images/phase2-todo.png" alt="Phase 2 Todo 앱" loading="lazy" /></a>
+        <a href="./src/pages/lab/index.html"><div class="icon">⚡</div><b>성능 실험실</b><span>세 방식 직접 비교</span><img src="./docs/images/phase1-key-demo.png" alt="실험 화면" loading="lazy" /></a>
+      </nav>
+
+      <h2>무엇이 일어나나</h2>
+      <div class="flow">
+        <div class="r">클릭</div><i>→</i><div class="r">Virtual DOM</div><i>→</i><div class="r">Diff</div><i>→</i><div class="r">Patch</div><i>→</i>
+        <div class="b">Layout</div><i>→</i><div class="b">Paint</div><i>→</i><div class="b">화면</div>
+      </div>
+      <p class="legend"><span class="r">우리가 만든 부분</span><span class="b">브라우저</span></p>
+
+      <h2>목록 1,000개 중 1개를 바꾸면</h2>
+      <div class="vs">
+        <div class="box"><div class="lbl">Patch</div><div class="big good">1</div><div class="lbl">DOM 수정 · 입력값 유지</div></div>
+        <div class="box"><div class="lbl">통째 교체 (innerHTML)</div><div class="big bad">2,001</div><div class="lbl">새로 만든 노드 · 입력값 사라짐</div></div>
+      </div>
+      <p class="note">단, 전부 바뀌면 둘 다 비슷합니다. Virtual DOM은 만능이 아닙니다.</p>
+
+      <h2>검증</h2>
+      <div class="stats">
+        <div><b>199/199</b><span>테스트</span></div>
+        <div><b>51/51</b><span>검증 항목</span></div>
+        <div><b>44/44</b><span>요구사항 추적</span></div>
+        <div><b>85.7%</b><span>뮤테이션</span></div>
+        <div><b>0</b><span>UI 프레임워크</span></div>
+      </div>
+
+      <footer>
+        <a href="https://github.com/team1-mini-lab/mini-react">GitHub</a>·<a href="https://github.com/team1-mini-lab/mini-react/blob/main/docs/verification/runs/2026-11-11-final-report.md">검증 보고서</a>·<a href="https://github.com/team1-mini-lab/mini-react/tree/main/docs/adr">설계 결정</a>
+        <p>김소망 · 김은기 · Hyunji Lee</p>
+      </footer>
+    </div>
   </body>
 </html>

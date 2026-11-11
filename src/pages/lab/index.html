@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>성능 실험실 — mini-react</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <a class="back" href="../../../index.html">← 처음으로</a>
+      <h1>⚡ 성능 실험실</h1>
+      <p class="lead">같은 목록을 세 방식으로 바꿔 봅니다</p>
+
+      <section class="bar-controls">
+        <div class="seg" data-name="size">
+          <button data-v="1000" class="on">1천 개</button><button data-v="10000">1만 개</button><button data-v="30000">3만 개</button>
+        </div>
+        <div class="seg" data-name="scope">
+          <button data-v="one" class="on">1개만 바꾸기</button><button data-v="all">전부 바꾸기</button>
+        </div>
+        <button id="lab-compare" class="run">▶ 비교 실행</button>
+      </section>
+
+      <section class="cards">
+        <article class="card" id="card-sync">
+          <h2>Patch</h2><p class="sub">바뀐 곳만 · 한 번에</p>
+          <div class="meter"><div class="fill"></div><div class="limit"></div></div>
+          <p class="ms">—</p><p class="dom">—</p>
+          <p class="pc"><span class="p">✅ 입력값 유지</span><span class="c">⚠ 구현 복잡</span></p>
+        </article>
+        <article class="card" id="card-sliced">
+          <h2>Patch + 나눠서</h2><p class="sub">5ms씩 쉬면서</p>
+          <div class="meter"><div class="fill"></div><div class="limit"></div></div>
+          <p class="ms">—</p><p class="dom">—</p>
+          <p class="pc"><span class="p">✅ 화면 안 멈춤</span><span class="c">⚠ 전체 시간 ↑</span></p>
+        </article>
+        <article class="card" id="card-replace">
+          <h2>통째 교체</h2><p class="sub">innerHTML 방식</p>
+          <div class="meter"><div class="fill"></div><div class="limit"></div></div>
+          <p class="ms">—</p><p class="dom">—</p>
+          <p class="pc"><span class="p">✅ 코드 단순</span><span class="c">⚠ 입력값 사라짐</span></p>
+        </article>
+      </section>
+      <p id="lab-verdict" class="verdict">▶ 비교 실행을 눌러 보세요</p>
+      <p class="legend">막대 = 화면이 멈춘 최장 시간 · <span class="red">빨간 선 50ms</span> 넘으면 클릭·입력이 밀림</p>
+
+      <section class="typing">
+        <h2>⌨️ 직접 느껴 보기</h2>
+        <p class="sub">1만 개로 바꾸고 → 버튼 누르고 → 바로 타이핑</p>
+        <div class="row">
+          <button data-auto="sync">Patch로 3초</button>
+          <button data-auto="sliced">나눠서 3초</button>
+        </div>
+        <input id="lab-input" type="text" placeholder="여기에 타이핑…" />
+        <p class="lag"><b id="lab-lag-num">0</b> ms <span id="lab-lag">입력 지연 (최대)</span></p>
+        <p id="lab-longtask" class="tiny"></p>
+      </section>
+
+      <details>
+        <summary>실험 중인 목록 보기</summary>
+        <pre id="lab-result"></pre>
+        <div id="lab-root"></div>
+      </details>
+    </main>
+    <script type="module">
+      import { startLab } from './main.ts';
+      startLab(document);
+    </script>
+  </body>
+</html>
