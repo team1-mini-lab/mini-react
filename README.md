@@ -153,12 +153,7 @@ flowchart LR
 
 ## 어떻게 검증했나
 
-<details>
-<summary><b>검증 프로세스 그림</b> — 사람이 정하고 · AI가 만들고 · 기계가 확인한다</summary>
-
 ![AI 에이전트와 협업하는 검증 프로세스](docs/images/verify-loop-dark.png)
-
-</details>
 
 "테스트가 통과한다"를 넘어, **요구사항 하나하나가 설계·코드·테스트로 이어지는지**를 기계가 확인하게 만들었습니다. 표준은 IEEE 1012(V&V), ISO/IEC/IEEE 29148(요구사항), IEEE 1016(설계 기술)을 참고했습니다.
 
