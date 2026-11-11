@@ -596,7 +596,7 @@ export class History<T> {
 | TBD-10 | 설계 범위 밖 (ID 체계 정렬). 이 표는 SRS ID를 쓴다 | 9.3 | — | — |
 | TBD-11 | (제안) `README.md` 산출물 — `SDD_final_common.md` 0장·부록 B가 내용 근거 | common | — | — |
 | TBD-12 | 통째 교체 vs Patch 비교: 성능 실험실 `startLab`, `countRecords` (13장) | 13장 | LB2, LB4 | VT-51 |
-| TBD-14 | 협력적 스케줄링: `diffSteps`, `diffSliced` (13장, ADR-0020 proposed) | 13장 | SL1, SL2, SL3, SL4, LB1, LB3, LB5, LB6 | VT-50, VT-51 |
+| TBD-14 | 협력적 스케줄링: `diffSteps`, `diffSliced` (13장, ADR-0020 accepted) | 13장 | SL1, SL2, SL3, SL4, LB1, LB3, LB5, LB6 | VT-50, VT-51 |
 | TBD-13 | (제안) key 있음·없음 비교 시연 | common 5장 5번 | D6, P2 | — |
 
 ### 9.4 VT별 테스트 위치 (Phase 1 + 공통)
@@ -728,7 +728,7 @@ export class History<T> {
 - 재귀 깊이 기준은 **1,000겹**(TBD-09). 테스트 T9·D14·P11을 1,000겹으로 올렸다. 재귀 구현이라 jsdom에서는 1,500겹부터 호출 스택을 넘는다. 사람이 쓰는 HTML은 보통 수십 겹이라 여유가 충분하다.
 - ADR-0001·0002·0004·0005·0006의 "재확인 필요" 절, ADR-0008·0011·0012·0016~0019를 팀이 승인했다.
 
-## 13. 협력적 스케줄링과 성능 실험실 (ADR-0020, proposed)
+## 13. 협력적 스케줄링과 성능 실험실 (ADR-0020, accepted)
 
 팀 제안으로 추가했다. 상세 결정·측정값·한계는 ADR-0020에 있다.
 

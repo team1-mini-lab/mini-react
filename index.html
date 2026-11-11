@@ -47,29 +47,27 @@
   <body>
     <div class="wrap">
       <header>
-        <h1>React 없이 만든 미니 React</h1>
-        <p class="tag">바뀐 곳만 고치는 화면, 직접 구현했습니다</p>
+        <h1>미니 React</h1>
       </header>
 
       <nav class="go">
-        <a href="./src/pages/phase1/index.html"><div class="icon">🧩</div><b>Phase 1</b><span>코드를 고치고 Patch</span><img src="./docs/images/phase1-patch.png" alt="Phase 1 검증 페이지" loading="lazy" /></a>
-        <a href="./src/pages/phase2/index.html"><div class="icon">✅</div><b>Phase 2</b><span>Hooks로 만든 Todo</span><img src="./docs/images/phase2-todo.png" alt="Phase 2 Todo 앱" loading="lazy" /></a>
-        <a href="./src/pages/lab/index.html"><div class="icon">⚡</div><b>성능 실험실</b><span>세 방식 직접 비교</span><img src="./docs/images/phase1-key-demo.png" alt="실험 화면" loading="lazy" /></a>
+        <a href="./src/pages/phase1/index.html"><div class="icon">🧩</div><b>Phase 1</b><img src="./docs/images/phase1-patch.png" alt="Phase 1 검증 페이지" loading="lazy" /></a>
+        <a href="./src/pages/phase2/index.html"><div class="icon">✅</div><b>Phase 2</b><img src="./docs/images/phase2-todo.png" alt="Phase 2 Todo 앱" loading="lazy" /></a>
+        <a href="./src/pages/lab/index.html"><div class="icon">⚡</div><b>성능 실험실</b><img src="./docs/images/phase1-key-demo.png" alt="실험 화면" loading="lazy" /></a>
       </nav>
 
-      <h2>무엇이 일어나나</h2>
+      <div style="height:40px"></div>
       <div class="flow">
         <div class="r">클릭</div><i>→</i><div class="r">Virtual DOM</div><i>→</i><div class="r">Diff</div><i>→</i><div class="r">Patch</div><i>→</i>
         <div class="b">Layout</div><i>→</i><div class="b">Paint</div><i>→</i><div class="b">화면</div>
       </div>
-      <p class="legend"><span class="r">우리가 만든 부분</span><span class="b">브라우저</span></p>
+      <p class="legend"><span class="r">미니 React</span><span class="b">브라우저</span></p>
 
       <h2>목록 1,000개 중 1개를 바꾸면</h2>
       <div class="vs">
         <div class="box"><div class="lbl">✏️ 부분 렌더링 (Virtual DOM)</div><div class="big good">1</div><div class="lbl">DOM 수정 · 입력값 유지</div></div>
         <div class="box"><div class="lbl">🔁 전체 렌더링 (innerHTML)</div><div class="big bad">2,001</div><div class="lbl">새로 만든 노드 · 입력값 사라짐</div></div>
       </div>
-      <p class="note">단, 전부 바뀌면 둘 다 비슷합니다. Virtual DOM은 만능이 아닙니다.</p>
 
       <h2>검증</h2>
       <div class="stats">
@@ -81,8 +79,8 @@
       </div>
 
       <footer>
-        <a href="https://github.com/team1-mini-lab/mini-react">GitHub</a>·<a href="https://github.com/team1-mini-lab/mini-react/blob/main/docs/verification/runs/2026-11-11-final-report.md">검증 보고서</a>·<a href="https://github.com/team1-mini-lab/mini-react/tree/main/docs/adr">설계 결정</a>
-        <p>김소망 · 김은기 · Hyunji Lee</p>
+        <a href="https://github.com/team1-mini-lab/mini-react">GitHub</a>·<a href="https://github.com/team1-mini-lab/mini-react/blob/verify-report/REPORT.md">최신 검증 보고서</a>·<a href="https://github.com/team1-mini-lab/mini-react/tree/main/docs/adr">설계 결정</a>
+        <p>김소망 · 김은기 · 이현지</p>
       </footer>
     </div>
   </body>

@@ -23,3 +23,6 @@ button:disabled { background: #ccc; border-color: #ccc; cursor: not-allowed; }
 .tv-remove { background: #ffd6d6; } .tv-add { background: #d4f5d4; } .tv-replace { background: #ffe0b8; }
 .tv-update { background: #fff3a3; } .tv-move { background: #d6e4ff; }
 #tree-legend span { display: inline-block; padding: 0 6px; margin-right: 6px; border-radius: 4px; font-size: 12px; }
+/* 샘플의 스크롤 상자(높이 60px): 두 줄이 딱 보이고, 스크롤할 수 있는 상자임이 보이게 */
+#real-area #scroll-box, #preview #scroll-box { border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; background: #fafaf8; box-sizing: content-box; }
+#real-area #scroll-box p, #preview #scroll-box p { margin: 0; line-height: 30px; border-bottom: 1px dashed #ececE6; }

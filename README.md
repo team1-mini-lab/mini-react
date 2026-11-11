@@ -5,13 +5,15 @@
 [![verify](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml)
 [![pages](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml)
 
-**▶ 데모: https://team1-mini-lab.github.io/mini-react/** — Phase 1 검증 페이지 · Phase 2 Todo 앱 · 성능 실험실
+**▶ 데모: https://team1-mini-lab.github.io/mini-react/** — [Phase 1 검증 페이지](https://team1-mini-lab.github.io/mini-react/src/pages/phase1/index.html) · [Phase 2 Todo 앱](https://team1-mini-lab.github.io/mini-react/src/pages/phase2/index.html) · [성능 실험실](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)
+
+**📋 [최신 검증 보고서](https://github.com/team1-mini-lab/mini-react/blob/verify-report/REPORT.md)** — push할 때마다 CI가 새로 만듭니다
 
 | 테스트 | VT(검증 항목) | 요구사항 추적 | 뮤테이션 점수 | 커버리지 (core · component) | 외부 UI 프레임워크 |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 | **202 / 202** | **51 / 51** | **44 / 44** | **85.7%** | **97% · 99%** | **0** |
 
-> 숫자는 모두 `scripts/report.py`가 명령 결과로 만든 [검증 보고서](docs/verification/runs/2026-11-11-final-report.md)에서 나온 값입니다. push·PR마다 CI가 다시 계산해 PR 댓글로 올립니다.
+> 숫자는 [검증 보고서 (2026-11-11 스냅샷)](docs/verification/runs/2026-11-11-final-report.md) 기준입니다. 최신 값은 [최신 검증 보고서](https://github.com/team1-mini-lab/mini-react/blob/verify-report/REPORT.md)에 있습니다.
 
 ---
 
@@ -44,7 +46,7 @@
 - **Phase 1 엔진 재사용**: 다시 그릴 때 Phase 1의 `diff`·`applyPatch`를 **수정 없이** 그대로 사용
 - **Todo 앱**: 위의 `h`·Hooks만으로 만든 테스트 페이지 (React·JSX 0줄)
 
-### 확장 — 성능 실험실 (ADR-0020, 팀 승인 대기)
+### 확장 — 성능 실험실 (ADR-0020)
 
 **[▶ 성능 실험실 열기](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)** — 같은 상품 목록이 바뀔 때 화면을 고치는 방법을 나란히 비교합니다.
 
@@ -52,7 +54,7 @@
 |---|---|---|---|
 | 🔁 전체 렌더링 (비교 기준) | Virtual DOM 없이 매번 전부 새로 만듦 (`innerHTML`) | 새로 만든 노드 2만 개 | 코드 단순 / 입력값·스크롤 사라짐 |
 | ✏️ 부분 렌더링 · 동기식 (**과제 구현**) | Virtual DOM으로 비교해 바뀐 곳만 고침, 한 번에 끝까지 | 화면 멈춤 약 **69ms** (50ms 넘으면 클릭·입력 밀림) | 입력값 유지 / 비교 비용 |
-| ⏸️ 부분 렌더링 · 분할식 (**우리 확장**) | 비교를 5ms 조각으로 나눠 사이사이 브라우저에 양보 (Time Slicing) | 화면 멈춤 약 **7ms** | 화면 안 멈춤 / 끝나는 건 조금 늦음 |
+| ⏸️ 부분 렌더링 · 분할식 (**팀 확장**) | 비교를 5ms 조각으로 나눠 사이사이 브라우저에 양보 (Time Slicing) | 화면 멈춤 약 **7ms** | 화면 안 멈춤 / 끝나는 건 조금 늦음 |
 | 👀 보이는 만큼만 (비교 줄이기) | 10만 개 중 화면에 보이는 줄만 Virtual DOM으로 만들고 스크롤 때 그 줄만 비교 | DOM 약 15줄, 스크롤 한 번에 바뀐 노드 몇 개 | 데이터가 많아도 가벼움 / 줄 높이가 일정해야 함 |
 | 🎯 바로 고치기 (비교 없애기) | Signals: 값과 화면 칸의 연결을 미리 기억해 그 칸만 고침 (별도 데모) | 1천 개 중 가격 하나: Virtual DOM 비교 2천여 개 vs **비교 0**, DOM 수정은 둘 다 1 | 비교 비용 없음 / 연결 목록을 메모리에 들고 있어야 함 |
 
@@ -61,6 +63,22 @@
 - **비교 비용을 줄이는 방법**: 보이는 만큼만(위 실험), 안 바뀐 컴포넌트 건너뛰기(React `memo`), 아예 비교하지 않기(Svelte·Solid의 Signals: 값과 화면 칸의 연결을 미리 기억해 그 칸만 고침).
 - **분할식 구현**: Diff를 노드 하나씩 멈췄다 이어 할 수 있는 작업(generator)으로 바꿔 `diffSliced()`가 5ms씩 실행하고 `MessageChannel`로 양보합니다. 새 업데이트가 오면 앞 작업은 버리고 최신 상태로 다시 시작합니다. 실제 DOM에 반영하는 단계(Commit)는 나누지 않습니다. 동기 Diff와 결과가 같다는 것을 무작위 트리 300쌍으로 확인했습니다(fast-check).
 - 시간은 기계마다 달라 보여 주기만 하고, 자동 테스트는 결과 화면과 DOM 노드 수로 판정합니다.
+
+---
+
+## 요구사항 (SRS)
+
+과제 설명을 먼저 [SRS](docs/SRS_fixed.md)(ISO/IEC/IEEE 29148 형식)로 정리하고, 모든 설계·코드·테스트를 이 ID에 연결했습니다.
+
+| 구분 | 개수 | 예 |
+|---|---|---|
+| 기능 (FR) | 23 | FR-04 바뀐 부분만 갱신 · FR-09 key 짝짓기 · FR-18 useEffect는 Patch 뒤 실행 |
+| 비기능 (NFR) | 4 | NFR-01 바뀌지 않은 곳은 건드리지 않음 · NFR-04 모듈 단일 책임 |
+| 인터페이스 (IR) | 10 | IR-05 Diff 엔진 · IR-08 setter |
+| 제약 (CON) | 7 | CON-01 React·JSX 등 외부 UI 프레임워크 금지 |
+| 검증 항목 (VT) | 51 | 요구사항마다 "어떤 테스트로 확인하는가" |
+
+SRS는 v1.1 → v1.8로 개정됐습니다. 설계 검토에서 찾은 반례와 팀 결정을 요구사항에 다시 반영한 기록이 [개정 이력](docs/SRS_fixed.md#개정-이력)에 남아 있습니다.
 
 ---
 
@@ -90,6 +108,24 @@ flowchart LR
 
 의존 방향은 `pages → component → core` 한 방향이고, `dependency-cruiser`가 역방향 import와 순환을 막습니다. Diff는 실제 DOM(`dom`)과 이벤트(`events`)를 읽지 않아 **실제 DOM 없이 객체 두 개만으로 테스트**할 수 있습니다.
 
+### 동작 흐름
+
+버튼을 눌렀을 때 데이터가 어떤 함수를 거쳐 화면까지 가는지 그린 그림입니다. 단계별 설명은 흐름 노트에 있습니다.
+
+<details>
+<summary><b>Phase 1</b> — 코드 입력 → 새 설계도 → diff → applyPatch, 실패하면 recoverPatch</summary>
+
+![Phase 1 동작 흐름](docs/images/phase1-flow.png)
+
+</details>
+
+<details>
+<summary><b>Phase 2</b> — 클릭 → setter → 예약(Batching) → update → diff·applyPatch → useEffect</summary>
+
+![Phase 2 동작 흐름](docs/images/phase2-flow.png)
+
+</details>
+
 ---
 
 ## 핵심 설계 결정
@@ -104,6 +140,9 @@ flowchart LR
 | Patch 실패 시 컨테이너를 새 트리로 통째 복구 | 반쯤 바뀐 화면이 남으면 다음 Patch부터 계속 어긋난다 | [0005](docs/adr/ADR-0005-patch.md) |
 | 하이라이트는 `element.animate()` | `class`·`style`을 건드리면 조작 횟수 측정에 섞인다 | [0006](docs/adr/ADR-0006-test-area.md) |
 | effect는 React와 같은 순서(정리 함수 전부 → 실행 전부) | 한 effect가 다른 effect의 옛 정리에 기대는 경우(타이머) | [0010](docs/adr/ADR-0010-hooks.md) |
+| 뒤로 간 상태에서 Patch하면 앞쪽 기록은 버림(한 줄 기록), 바뀐 게 없는 Patch는 기록하지 않음 | 가지 치는 기록은 일정 대비 규칙이 너무 많고, 빈 기록이 생기면 뒤로가기가 고장 난 것처럼 보인다 | [0008](docs/adr/ADR-0008-history.md) |
+| setter는 바로 그리지 않고 마이크로태스크로 **한 번만** 예약(Batching), 테스트는 `flushSync()`로 즉시 확인 | 한 번의 클릭에 상태가 여러 번 바뀌어도 Diff·Patch는 1번. 20줄 남짓으로 구현 가능 | [0009](docs/adr/ADR-0009-batching.md) |
+| Hook은 hooks 배열 + 호출 순서 번호, 실행 중에 호출 수·종류를 검사해 오류로 알림 | React와 같은 모델을 유지하면서 "자식에서 useState", "조건문 안 Hook"을 테스트 가능한 오류로 잡는다 | [0010](docs/adr/ADR-0010-hooks.md) |
 | 이벤트 핸들러는 요소마다 고정 리스너 1개 + `__handlers` 교체 | 매 렌더 새 클로저가 생겨도 DOM 조작 0회 | [0015](docs/adr/ADR-0015-component-rendering.md) |
 
 **실제 React와 의도적으로 다른 점** (발표·방어 포인트): 자식 컴포넌트 즉시 펼침, 요소별 고정 리스너, effect를 Patch 직후 동기 실행, 루트 컴포넌트 하나 & `unmount` 없음, 렌더링 중 setter는 한 번 옛 값으로 그려짐 — 이유는 [SDD Phase 2 1.2](docs/specs/SDD_final_phase2.md)에 있습니다.
@@ -111,6 +150,8 @@ flowchart LR
 ---
 
 ## 어떻게 검증했나
+
+![검증 루프](docs/images/verify-loop.png)
 
 "테스트가 통과한다"를 넘어, **요구사항 하나하나가 설계·코드·테스트로 이어지는지**를 기계가 확인하게 만들었습니다. 표준은 IEEE 1012(V&V), ISO/IEC/IEEE 29148(요구사항), IEEE 1016(설계 기술)을 참고했습니다.
 
@@ -127,7 +168,7 @@ SRS(요구사항) → ADR(결정 20개) → SDD(설계) → 코드(src) → VT(�
 
 ### 구현 전에 설계 결함을 찾은 사례
 
-설계 문서를 jsdom 시제품으로 먼저 돌려 보는 **설계 반증** 단계에서, 공식 샘플을 **아무것도 고치지 않고 Patch해도 "변경 있음"이 나오는** 결함을 찾았습니다. 원인은 주석을 건너뛴 자리 양옆에 공백 글자 노드가 따로 남아, 실제 영역(자식 15개)과 다시 읽은 트리(자식 9개)가 어긋난 것이었습니다. 이 반례를 ADR-0016(나란히 남은 공백 노드 합치기)으로 고친 뒤 구현해, 무수정 Patch의 변경이 **0개**로 떨어집니다. 같은 방식으로 반례 17건을 판정했고(진짜 반례 8 · 기존 한계 3 · 아님 6), 진짜 반례는 [ADR-0016~0019](docs/adr/README.md)가 되었습니다.
+설계 문서를 jsdom 시제품으로 먼저 돌려 보는 **설계 반증** 단계에서, 공식 샘플을 **아무것도 고치지 않고 Patch해도 "변경 있음"이 나오는** 결함을 찾았습니다. 원인은 주석을 건너뛴 자리 양옆에 공백 글자 노드가 따로 남아, 실제 영역(자식 15개)과 다시 읽은 트리(자식 9개)가 어긋난 것이었습니다. 이 반례를 ADR-0016(나란히 남은 공백 노드 합치기)으로 고친 뒤 구현해, 무수정 Patch의 변경이 **0개**로 떨어집니다. 같은 방식으로 반례 17건을 판정했고(진짜 반례 8 · 기존 한계 3 · 아님 6), 진짜 반례는 [ADR-0016–0019](docs/adr/README.md)가 되었습니다.
 
 ### 뮤테이션 테스트로 테스트의 빈틈 찾기
 
@@ -174,13 +215,13 @@ docs/
 
 ## 팀
 
-설계는 ADR로 나눠 맡고, 모든 결정은 팀 설계 검토와 PR 리뷰를 거쳐 함께 승인했습니다.
+SRS(요구사항)는 팀 전체가 함께 작성했고, 설계는 ADR로 나눠 맡았습니다. 모든 결정은 팀 설계 검토와 PR 리뷰를 거쳐 함께 승인했습니다.
 
 | 이름 | 맡은 부분 |
 |---|---|
-| 김소망 | Phase 1 핵심 설계(ADR-0001~0006: Virtual DOM 노드, DOM 변환, Diff·Patch, 테스트 영역), Phase 2 컴포넌트 렌더링(ADR-0015), 팀 설계 검토 진행 |
-| 김은기 | History·Batching·Hooks·하네스 설계(ADR-0007~0014), 설계 반례 판정(ADR-0016~0019), Phase 1·2 구현과 검증 하네스 |
-| Hyunji Lee | 저장소 구성, 설계 결정 검토 |
+| 김소망 | Phase 1 VDOM·DOM 변환·Diff·Patch·테스트 영역 설계(ADR-0001–0006), Phase 2 컴포넌트 렌더링 설계(ADR-0015), 팀 설계 검토 진행 |
+| 김은기 | Phase 1 History, Phase 2 State·Hooks·Batching, 테스트·검증 하네스 설계(ADR-0007–0014), 설계 반례 판정(ADR-0016–0019), Phase 1·2 구현과 자동 검증 보고서 |
+| 이현지 | 저장소 구성, ADR 전체 검토 의견(ADR-0001–0015) |
 
 ## 다른 팀과 다르게 더한 것
 

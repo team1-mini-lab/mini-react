@@ -31,7 +31,7 @@ export function startKeyDemo(doc: Document = document): KeyDemo | null {
     unkeyed = fruitList(FRUITS, false);
     mountTree(keyedBox, keyed);
     mountTree(unkeyedBox, unkeyed);
-    if (log) log.textContent = '입력칸에 숫자를 적은 뒤 "맨 앞에 사과 추가"를 누르세요.';
+    if (log) log.textContent = '';
   };
 
   const addFirst = () => {

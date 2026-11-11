@@ -8,12 +8,12 @@
 | 항목 | 내용 |
 |---|---|
 | 프로젝트명 | 미니 React 구현 프로젝트 |
-| 문서 버전 | 1.5 (제안 ADR-0016~0019·제안 요구사항 TBD-11~13 추가, 이전: 1.4 ADR-0005 t3·ADR-0002 s2·ADR-0015 반영, 기준 설계 문서 `docs/specs/SDD_final_phase1.md`·`SDD_final_phase2.md`) |
+| 문서 버전 | 1.9 (변경 내용은 아래 개정 이력, 기준 설계 문서 `docs/specs/SDD_final_phase1.md`·`SDD_final_phase2.md`) |
 | 작성일 | 2026-11-07 |
-| 개정일 | 2026-11-10 (1.2, 1.3, 1.4, 1.5) |
+| 개정일 | 2026-11-11 (1.7, 1.8, 1.9) |
 | 작성자 | 프로젝트 팀원 전체 |
 | 검토자 | 프로젝트 팀원 전체 |
-| 문서 상태 | Review (proposed ADR-0008~0012·0015 승인 및 "재확인 필요" 절 재확인 대기) |
+| 문서 상태 | Approved (ADR-0001–0020 팀 승인 완료) |
 
 ## 개정 이력
 
@@ -27,6 +27,7 @@
 | 1.6 | 2026-11-10 | TBD-13(key 유무 비교 시연)을 채택으로 바꿈. 차별화는 `SDD_final_common.md` 5장 1(하이라이트)·4(트리 보기)·5(key 비교)로 확정 | 팀 결정, Phase 1·2 구현 |
 | 1.7 | 2026-11-11 | TBD-09(재귀 깊이) 1,000겹으로 결정, VT-46 문장 갱신. ADR 전부 accepted(PR #54 팀 승인) | 팀 결정 (PR #54 리뷰) |
 | 1.8 | 2026-11-11 | TBD-14(협력적 스케줄링) 추가, TBD-12를 성능 실험실로 구현, VT-50·VT-51 추가, ADR-0020(proposed) | 팀 제안 |
+| 1.9 | 2026-11-11 | ADR-0020 승인. 5.1.3 ADR 상태를 모두 accepted로 갱신(2026-11-11 팀 승인 반영), TBD-12·13·14를 채택으로 표시 | 팀 승인 |
 
 > **ADR 번호 안내**: v1.2부터 `docs/adr/README.md`의 통합 번호를 쓴다. ADR-0001~0006은 `somage/works`의 설계 ADR(accepted), ADR-0007~0012는 `eungi/docs/adr`의 ADR을 다시 매긴 번호, ADR-0015는 컴포넌트 렌더링 ADR이다. ADR-0013·0014는 v1.4에서 superseded(각각 ADR-0005 6절 t3, ADR-0002 4절 s2로 대체)되어 `docs/adr/superseded/`에 보관한다. 대응은 5.1.3에 있다.
 >
@@ -307,7 +308,7 @@
 | VT-44 | NFR-03 | Unit Test | `[A(p), B]` → `[B, A(h1)]` | 적용 순서 | `insertBefore` 오류 없이 `[B, A(h1)]` (ADR-0005 P6) |
 | VT-45 | FR-07, FR-08, NFR-03 | Unit Test | 아무 Patch 후, Patch 연속 3회 | `dom` 이어받기 | 새 트리의 모든 객체에 `dom`이 있고 매번 성공 (ADR-0005 P7, P8) |
 | VT-50 | TBD-14 | Unit Test | 무작위 두 트리를 시간 분할로 Diff, 도중 취소 | 결과 동일성 | 동기 Diff와 변경 목록·짝 목록이 같고, 양보·재개·취소가 동작함 (ADR-0020 SL1~SL4) |
-| VT-51 | TBD-12, TBD-14 | Integration Test | 성능 실험실에서 동기·협력적·통째 교체 비교 | 결과 화면과 DOM 노드 수 | 세 방식의 화면이 같고, 1개 변경 시 Patch는 수정 1·통째 교체는 전부 새로 생성, 실행 중 새 업데이트는 최신 상태로 끝남 (ADR-0020 LB1~LB4) |
+| VT-51 | TBD-12, TBD-14 | Integration Test | 성능 실험실에서 동기·협력적·통째 교체 비교 | 결과 화면과 DOM 노드 수 | 세 방식의 화면이 같고, 1개 변경 시 Patch는 수정 1·통째 교체는 전부 새로 생성, 실행 중 새 업데이트는 최신 상태로 끝남 (ADR-0020 LB1~LB4). 가상 스크롤은 데이터 1만 개에서 DOM이 보이는 줄만 유지(LB5), Signals 데모는 가격 하나 변경 시 비교 0·DOM 수정 1(LB6) |
 | VT-46 | NFR-03 | Unit Test | 빈 요소에 추가 후 다시 비우기, 1,000겹 중첩의 가장 깊은 글자 변경, 추가·삭제·글자 수정 동시 발생 | 견고성 | ADR-0005 D13~D15, P10~P12 통과 (깊이 기준은 TBD-09) |
 
 ---
@@ -356,24 +357,24 @@
 
 | ADR (통합 번호) | 원래 위치 | 제목 | 상태 | 반영 SRS 항목 | 검증 ID (VT) |
 |---|---|---|---|---|---|
-| ADR-0001 | `somage/works` ADR 0001 | Virtual DOM 노드 모양 (`type`, `key`, `dom`, `events`) | accepted (`events` 추가는 재확인 필요) | 1.3, FR-01, FR-22, IR-04, IR-05 | VT-01, VT-37 |
-| ADR-0002 | `somage/works` ADR 0002 | DOM → Virtual DOM 변환, 공백 정리, 4절 실행 내용 건너뛰기(s2) | accepted (4절 재확인 필요) | FR-01, FR-02, IR-04, NFR-03 | VT-01, VT-02, VT-21, VT-25, VT-26, VT-37 |
+| ADR-0001 | `somage/works` ADR 0001 | Virtual DOM 노드 모양 (`type`, `key`, `dom`, `events`) | accepted | 1.3, FR-01, FR-22, IR-04, IR-05 | VT-01, VT-37 |
+| ADR-0002 | `somage/works` ADR 0002 | DOM → Virtual DOM 변환, 공백 정리, 4절 실행 내용 건너뛰기(s2) | accepted | FR-01, FR-02, IR-04, NFR-03 | VT-01, VT-02, VT-21, VT-25, VT-26, VT-37 |
 | ADR-0003 | `somage/works` ADR 0003 | Virtual DOM → 실제 DOM 그리기 | accepted | FR-01, IR-09, NFR-01 | VT-38 |
-| ADR-0004 | `somage/works` ADR 0004 | Diff·Patch 분리, `dom` 참조, key 짝짓기, `value`·`checked` 프로퍼티 | accepted (1절 `value`·`checked` 재확인 필요) | 0장, FR-04~FR-06, FR-08, FR-09, IR-05, NFR-01, NFR-03, TBD-03, TBD-04 | VT-03~VT-05, VT-36 |
-| ADR-0005 | `somage/works` ADR 0005 | Patch 적용 순서, `{ changes, pairs }`, 6절 실패 복구(t3) | accepted (6절 재확인 필요) | IR-05, IR-06, NFR-01, NFR-03, TBD-07 | VT-03~VT-06, VT-31, VT-43~VT-46 |
-| ADR-0006 | `somage/works` ADR 0006 | 테스트 영역 = 코드 입력칸 + 미리보기, 8절 시연 기능 | accepted (8절 재확인 필요) | FR-01~FR-03, FR-08, IR-01, IR-10, CON-07, TBD-02 | VT-39~VT-42 |
+| ADR-0004 | `somage/works` ADR 0004 | Diff·Patch 분리, `dom` 참조, key 짝짓기, `value`·`checked` 프로퍼티 | accepted | 0장, FR-04~FR-06, FR-08, FR-09, IR-05, NFR-01, NFR-03, TBD-03, TBD-04 | VT-03~VT-05, VT-36 |
+| ADR-0005 | `somage/works` ADR 0005 | Patch 적용 순서, `{ changes, pairs }`, 6절 실패 복구(t3) | accepted | IR-05, IR-06, NFR-01, NFR-03, TBD-07 | VT-03~VT-06, VT-31, VT-43~VT-46 |
+| ADR-0006 | `somage/works` ADR 0006 | 테스트 영역 = 코드 입력칸 + 미리보기, 8절 시연 기능 | accepted | FR-01~FR-03, FR-08, IR-01, IR-10, CON-07, TBD-02 | VT-39~VT-42 |
 | ADR-0007 | `eungi` adr_001 + `somage/works` ADR_0001 (중복 병합) | 프로그래밍 언어 (TypeScript) | accepted | CON-01, CON-02 | VT-23 |
-| ADR-0008 | `eungi` adr_002 + 피드백 01(블로그 97) | History 정책: 선형, 변경 없으면 기록 안 함, 수정 중 이동 금지 | proposed | FR-07, FR-08, TBD-01 | VT-07~VT-09, VT-30, VT-47~VT-49 |
-| ADR-0009 | `eungi` adr_006 + 피드백 05 | State 변경 Batching (microtask) | proposed | TBD-05 | VT-19 |
-| ADR-0010 | `eungi` adr_007 + 피드백 04·05 | Hook 상태 저장 방식과 호출 규칙 강제 | proposed | FR-15~FR-21 | VT-12~VT-16 |
-| ADR-0011 | `eungi` adr_008 | 테스트 하네스 (Vitest + jsdom) | proposed | CON-05 | VT-35 |
-| ADR-0012 | `eungi` adr_009 | 설계 준수 검증 하네스 자동화 | proposed | NFR-02, NFR-04, CON-01 | VT-22, VT-23 |
-| ADR-0015 | 피드백 03·06(블로그 99·102) | 컴포넌트 렌더링 (`h` 즉시 펼침, `mount`·`update`, `events`) | proposed | FR-11~FR-14, FR-22 | VT-10, VT-11, VT-13, VT-17 |
-| ADR-0016 | 설계 검토 반례 1·2·3 (2026-11-10) | 건너뛴 노드 양옆 글자 노드 합치기, ADR-0002 보완 | proposed | FR-01, FR-03, IR-04, IR-10 | VT-33, VT-37, VT-39, VT-47 |
-| ADR-0017 | 설계 검토 반례 5 | 뒤로·앞으로가기 중 t3 복구 시 History 유지, ADR-0005 6절 보완 | proposed | FR-08, IR-06 | VT-31, VT-45 |
-| ADR-0018 | 설계 검토 반례 4 | `<pre>` 첫 줄바꿈 왕복, ADR-0006 a3 보완 | proposed | IR-10 | VT-39 |
-| ADR-0019 | 설계 검토 반례 6, SDD 11장 | Phase 1 페이지 경계 동작 4가지 | proposed | FR-02, FR-08, IR-01, IR-03 | VT-30, VT-48 |
-| ADR-0020 | 팀 제안 (2026-11-11) | 협력적 스케줄링: Diff 시간 분할 + 성능 실험실 | proposed | TBD-12, TBD-14 | VT-50, VT-51 |
+| ADR-0008 | `eungi` adr_002 + 피드백 01(블로그 97) | History 정책: 선형, 변경 없으면 기록 안 함, 수정 중 이동 금지 | accepted | FR-07, FR-08, TBD-01 | VT-07~VT-09, VT-30, VT-47~VT-49 |
+| ADR-0009 | `eungi` adr_006 + 피드백 05 | State 변경 Batching (microtask) | accepted | TBD-05 | VT-19 |
+| ADR-0010 | `eungi` adr_007 + 피드백 04·05 | Hook 상태 저장 방식과 호출 규칙 강제 | accepted | FR-15~FR-21 | VT-12~VT-16 |
+| ADR-0011 | `eungi` adr_008 | 테스트 하네스 (Vitest + jsdom) | accepted | CON-05 | VT-35 |
+| ADR-0012 | `eungi` adr_009 | 설계 준수 검증 하네스 자동화 | accepted | NFR-02, NFR-04, CON-01 | VT-22, VT-23 |
+| ADR-0015 | 피드백 03·06(블로그 99·102) | 컴포넌트 렌더링 (`h` 즉시 펼침, `mount`·`update`, `events`) | accepted | FR-11~FR-14, FR-22 | VT-10, VT-11, VT-13, VT-17 |
+| ADR-0016 | 설계 검토 반례 1·2·3 (2026-11-10) | 건너뛴 노드 양옆 글자 노드 합치기, ADR-0002 보완 | accepted | FR-01, FR-03, IR-04, IR-10 | VT-33, VT-37, VT-39, VT-47 |
+| ADR-0017 | 설계 검토 반례 5 | 뒤로·앞으로가기 중 t3 복구 시 History 유지, ADR-0005 6절 보완 | accepted | FR-08, IR-06 | VT-31, VT-45 |
+| ADR-0018 | 설계 검토 반례 4 | `<pre>` 첫 줄바꿈 왕복, ADR-0006 a3 보완 | accepted | IR-10 | VT-39 |
+| ADR-0019 | 설계 검토 반례 6, SDD 11장 | Phase 1 페이지 경계 동작 4가지 | accepted | FR-02, FR-08, IR-01, IR-03 | VT-30, VT-48 |
+| ADR-0020 | 팀 제안 (2026-11-11) | 협력적 스케줄링: Diff 시간 분할 + 성능 실험실 | accepted | TBD-12, TBD-14 | VT-50, VT-51 |
 | ADR-0013 | `eungi` adr_005에서 복구 | Patch 적용 전 검증 (t2) | superseded by ADR-0005 6절 t3 (v1.4) | — | — |
 | ADR-0014 | `eungi` adr_003에서 복구 | 입력 정제 | superseded by ADR-0002 4절 s2 (v1.4) | — | — |
 | (superseded) | `eungi` adr_003 | 테스트 영역 수정 방식 | superseded by ADR-0006 (삭제) | 입력 정제는 ADR-0002 4절 | — |
@@ -422,9 +423,9 @@
 | TBD-09 | 재귀 깊이 기준 | ADR-0002 T9, ADR-0003, ADR-0005 D14·P11이 같은 기준을 공유함 | 결정 (2026-11-11): 1,000겹. jsdom에서 1,500겹부터 호출 스택 초과(재귀 구현) |
 | TBD-10 | issue.md와 SRS의 ID 체계 정렬 | Phase 2 FR 번호, NFR-04 의미, C-xx ↔ CON-xx가 서로 달라 ADR이 인용하는 ID가 문서마다 다른 요구를 가리킴. issue.md FR-12는 SRS에 대응 항목이 없음 | 미결. 5.1.4 대응표를 기준으로 두 문서 중 하나로 통일 필요 |
 | TBD-11 | (제안 요구사항) 산출물 `README.md` | 과제 원문의 제출물이자 4분 발표 자료. 중점 포인트(DOM·Window, 변화 감지 API, Reflow·Repaint, Virtual DOM 구조·필요성, Diff 핵심 케이스, 실제 React와의 차이, Batching)에 답해야 함 | **채택 (2026-11-10)**. Phase 2 완료 후 작성. 코드 검토 체크리스트로 확인 |
-| TBD-12 | (제안 요구사항) 통째 교체(`innerHTML`) vs Patch 비교 화면 | 같은 변경을 두 방식으로 적용해 `MutationObserver` 기록 수와 입력값 유지 여부를 나란히 보여 줌. 과제 원문 "실제 DOM의 변화를 감지하는 브라우저 API"와 "다른 팀과의 차별점"에 대응 | 구현 (ADR-0020 proposed, 성능 실험실 `pages/lab`), VT-51 |
-| TBD-14 | (제안 요구사항) 협력적 스케줄링 | 큰 목록을 다시 그리는 동안에도 입력이 막히지 않도록 Diff를 시간 단위로 나눠 실행하고(Commit은 동기), 동기 방식과 Long Task·입력 반응성을 비교해 보여 줌. 결과는 동기 Diff와 같아야 함 | 구현 (ADR-0020 proposed, 팀 승인 대기), VT-50, VT-51 |
-| TBD-13 | (제안 요구사항) key 있음·없음 비교 시연 | 같은 목록 변경을 key 유무로 Patch해 입력값이 따라가는지 보여 줌 (FR-09 시연) | 채택 (2026-11-10, 팀 차별화 1·4·5번 결정). `pages/phase1/key-demo.ts`, 통합 테스트 `[VT-36] key 데모` |
+| TBD-12 | (채택) 통째 교체(`innerHTML`) vs Patch 비교 화면 | 같은 변경을 두 방식으로 적용해 `MutationObserver` 기록 수와 입력값 유지 여부를 나란히 보여 줌. 과제 원문 "실제 DOM의 변화를 감지하는 브라우저 API"와 "다른 팀과의 차별점"에 대응 | 구현 (ADR-0020 proposed, 성능 실험실 `pages/lab`), VT-51 |
+| TBD-14 | (채택) 협력적 스케줄링 | 큰 목록을 다시 그리는 동안에도 입력이 막히지 않도록 Diff를 시간 단위로 나눠 실행하고(Commit은 동기), 동기 방식과 Long Task·입력 반응성을 비교해 보여 줌. 결과는 동기 Diff와 같아야 함 | 구현 (ADR-0020 proposed, 팀 승인 대기), VT-50, VT-51 |
+| TBD-13 | (채택) key 있음·없음 비교 시연 | 같은 목록 변경을 key 유무로 Patch해 입력값이 따라가는지 보여 줌 (FR-09 시연) | 채택 (2026-11-10, 팀 차별화 1·4·5번 결정). `pages/phase1/key-demo.ts`, 통합 테스트 `[VT-36] key 데모` |
 
 ## 6.2 ADR 간 충돌 사항 (CF)
 
