@@ -5,6 +5,8 @@
 [![verify](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml)
 [![pages](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml)
 
+**기술 스택**: TypeScript 6 (strict) · Vite 8 · Vitest 5 · jsdom · ESLint 10 + typescript-eslint · dependency-cruiser · Stryker · fast-check · GitHub Actions. UI 프레임워크는 쓰지 않습니다.
+
 **▶ 데모: https://team1-mini-lab.github.io/mini-react/** — [Phase 1 검증 페이지](https://team1-mini-lab.github.io/mini-react/src/pages/phase1/index.html) · [Phase 2 Todo 앱](https://team1-mini-lab.github.io/mini-react/src/pages/phase2/index.html) · [성능 실험실](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)
 
 **📋 [최신 검증 보고서](https://github.com/team1-mini-lab/mini-react/blob/verify-report/REPORT.md)** — push할 때마다 CI가 새로 만듭니다
@@ -190,8 +192,6 @@ npm run dev          # http://localhost:5173 → Phase 1 · Phase 2 · 성능 �
 | `npm run test:mutation` | Stryker 뮤테이션 테스트 (약 10분) |
 | `npm run verify` | 타입 검사 + 기술 스택 + 의존 방향 + lint + 문서 정합성 + 테스트 |
 | `npm run report` | 위 전부를 돌려 `report/REPORT.md`(G1~G4, 정합성 사슬, VT 51개 증거) 생성 |
-
-**기술 스택**: TypeScript 6 (strict) · Vite 8 · Vitest 5 · jsdom · ESLint 10 + typescript-eslint · dependency-cruiser · Stryker · fast-check · GitHub Actions. UI 프레임워크는 쓰지 않습니다.
 
 ---
 
