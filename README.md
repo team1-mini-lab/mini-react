@@ -167,6 +167,5 @@ docs/
 |---|---|
 | 김소망 | Phase 1 핵심 설계 결정 ADR-0001~0006(Virtual DOM 노드, DOM 변환, Diff·Patch, 테스트 영역)과 Phase 2 ADR-0015(컴포넌트 렌더링·이벤트) 작성, 팀 설계 검토(피드백 01~06) |
 | 김은기 (velocitygoal) | ADR-0007~0014(언어, History, Batching, Hooks, 테스트·설계 하네스 등) 작성, 하네스 반례 판정으로 ADR-0016~0019 도출, 요구사항(SRS)·최종 설계서(SDD) 정리, Phase 1·2 구현과 테스트 199개, 검증 하네스·CI 보고서·뮤테이션 테스트 |
-| Hyunji Lee | 저장소 구성, 설계 결정 검토 |
+| 이현지 | 저장소 구성, 설계 결정 검토 |
 
-설계 과정 기록: [미니 리액트 개발 일지](https://eutopiaa.tistory.com/90)
