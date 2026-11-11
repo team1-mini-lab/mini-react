@@ -46,6 +46,22 @@
       <p class="legend">막대 = 화면이 멈춘 최장 시간 · <span class="red">빨간 선 50ms</span> 넘으면 클릭·입력이 밀림</p>
 
 
+      <h1 class="h2">📜 보이는 것만 그리기</h1>
+      <p class="lead">상품 10만 개 — 화면에 보이는 줄만 만듭니다 (가상 스크롤)</p>
+      <section class="cards two">
+        <article class="card" id="virt-win">
+          <h2>✏️ 보이는 것만</h2><p class="sub">아래 목록을 스크롤해 보세요</p>
+          <p class="ms big">—</p><p class="dom" id="virt-win-ms">DOM에 있는 줄 수</p>
+          <div id="virt-root" class="vbox"></div>
+        </article>
+        <article class="card" id="virt-full">
+          <h2>🔁 전부 그리기</h2><p class="sub">10만 줄을 모두 만들기</p>
+          <p class="ms big">—</p><p class="dom" id="virt-full-ms">버튼을 눌러 보세요 (잠깐 멈춥니다)</p>
+          <button id="virt-draw-all" class="run">10만 줄 그리기</button>
+          <div id="virt-all-root" class="vbox"></div>
+        </article>
+      </section>
+
       <details>
         <summary>목록 보기</summary>
         <pre id="lab-result"></pre>
@@ -54,7 +70,9 @@
     </main>
     <script type="module">
       import { startLab } from './main.ts';
+      import { startVirtual } from './virtual.ts';
       startLab(document);
+      startVirtual(document);
     </script>
   </body>
 </html>

@@ -9,7 +9,7 @@
 
 | 테스트 | VT(검증 항목) | 요구사항 추적 | 뮤테이션 점수 | 커버리지 (core · component) | 외부 UI 프레임워크 |
 |:---:|:---:|:---:|:---:|:---:|:---:|
-| **199 / 199** | **51 / 51** | **44 / 44** | **85.7%** | **97% · 99%** | **0** |
+| **200 / 200** | **51 / 51** | **44 / 44** | **85.7%** | **97% · 99%** | **0** |
 
 > 숫자는 모두 `scripts/report.py`가 명령 결과로 만든 [검증 보고서](docs/verification/runs/2026-11-11-final-report.md)에서 나온 값입니다. push·PR마다 CI가 다시 계산해 PR 댓글로 올립니다.
 
@@ -104,7 +104,7 @@ flowchart LR
 "테스트가 통과한다"를 넘어, **요구사항 하나하나가 설계·코드·테스트로 이어지는지**를 기계가 확인하게 만들었습니다. 표준은 IEEE 1012(V&V), ISO/IEC/IEEE 29148(요구사항), IEEE 1016(설계 기술)을 참고했습니다.
 
 ```
-SRS(ID 106개) → ADR(결정 19개) → SDD(설계) → 코드(src) → VT(검증 항목 49개) → 테스트 199개
+SRS(ID 106개) → ADR(결정 19개) → SDD(설계) → 코드(src) → VT(검증 항목 49개) → 테스트 200개
 ```
 
 | 관문 | 확인하는 것 | 도구 |
@@ -133,7 +133,7 @@ npm run dev          # http://localhost:5173 → Phase 1 / Phase 2 링크
 
 | 명령 | 하는 일 |
 |---|---|
-| `npm test` | Vitest 199개 (jsdom) |
+| `npm test` | Vitest 200개 (jsdom) |
 | `npm run test:coverage` | 커버리지 (core·component 90% 미만이면 실패) |
 | `npm run test:mutation` | Stryker 뮤테이션 테스트 (약 10분) |
 | `npm run verify` | 타입 검사 + 기술 스택 + 의존 방향 + lint + 문서 정합성 + 테스트 |
@@ -166,7 +166,7 @@ docs/
 | 이름 | 주요 기여 |
 |---|---|
 | 김소망 | Phase 1 핵심 설계 결정 ADR-0001~0006(Virtual DOM 노드, DOM 변환, Diff·Patch, 테스트 영역)과 Phase 2 ADR-0015(컴포넌트 렌더링·이벤트) 작성, 팀 설계 검토(피드백 01~06) |
-| 김은기 (velocitygoal) | ADR-0007~0014(언어, History, Batching, Hooks, 테스트·설계 하네스 등) 작성, 하네스 반례 판정으로 ADR-0016~0019 도출, 요구사항(SRS)·최종 설계서(SDD) 정리, Phase 1·2 구현과 테스트 199개, 검증 하네스·CI 보고서·뮤테이션 테스트 |
+| 김은기 (velocitygoal) | ADR-0007~0014(언어, History, Batching, Hooks, 테스트·설계 하네스 등) 작성, 하네스 반례 판정으로 ADR-0016~0019 도출, 요구사항(SRS)·최종 설계서(SDD) 정리, Phase 1·2 구현과 테스트 200개, 검증 하네스·CI 보고서·뮤테이션 테스트 |
 | Hyunji Lee | 저장소 구성, 설계 결정 검토 |
 
 설계 과정 기록: [미니 리액트 개발 일지](https://eutopiaa.tistory.com/90)

@@ -596,7 +596,7 @@ export class History<T> {
 | TBD-10 | 설계 범위 밖 (ID 체계 정렬). 이 표는 SRS ID를 쓴다 | 9.3 | — | — |
 | TBD-11 | (제안) `README.md` 산출물 — `SDD_final_common.md` 0장·부록 B가 내용 근거 | common | — | — |
 | TBD-12 | 통째 교체 vs Patch 비교: 성능 실험실 `startLab`, `countRecords` (13장) | 13장 | LB2, LB4 | VT-51 |
-| TBD-14 | 협력적 스케줄링: `diffSteps`, `diffSliced` (13장, ADR-0020 proposed) | 13장 | SL1, SL2, SL3, SL4, LB1, LB3 | VT-50, VT-51 |
+| TBD-14 | 협력적 스케줄링: `diffSteps`, `diffSliced` (13장, ADR-0020 proposed) | 13장 | SL1, SL2, SL3, SL4, LB1, LB3, LB5 | VT-50, VT-51 |
 | TBD-13 | (제안) key 있음·없음 비교 시연 | common 5장 5번 | D6, P2 | — |
 
 ### 9.4 VT별 테스트 위치 (Phase 1 + 공통)
@@ -614,7 +614,7 @@ export class History<T> {
 | `tests/integration/phase1.test.ts` | VT-08, VT-09, VT-40, VT-41, VT-47, VT-48, VT-49 | H3, H4, H6~H12, TA8~TA12, U1, U2, TV1~TV4 |
 | `tests/property/*.prop.test.ts` | VT-03, VT-06, VT-28 (보강) | 10.3 불변식 |
 | `tests/unit/slice.test.ts` | VT-50 | SL1~SL4 |
-| `tests/integration/lab.test.ts` | VT-51 | LB1~LB4 |
+| `tests/integration/lab.test.ts`, `tests/integration/virtual.test.ts` | VT-51 | LB1~LB5 |
 | `scripts/check_stack.py` (`check:stack`) | VT-23 | ADR-0007 Confirmation |
 | CI 로그 (`npm test`) | VT-35 | ADR-0011 Confirmation |
 | 코드 검토 | VT-22 | ADR-0004·0005 코드 검토 항목 |
@@ -735,7 +735,7 @@ export class History<T> {
 - **작업 단위**: `diff.ts`의 `diffNode`·`diffChildren`을 generator로 바꿔 노드 하나마다 멈출 수 있게 했다(`diffSteps`). 동기 `diff()`는 이것을 끝까지 돌리므로 기존 동작·테스트는 그대로다(1,000겹 중첩 포함).
 - **스케줄러**: `core/slice.ts`의 `diffSliced()`가 5ms 예산으로 조각을 돌리고 `MessageChannel`로 양보한다. 취소(`cancel`) 시 `null`. Commit(`applyPatch`)은 나누지 않는다.
 - **성능 실험실** `pages/lab`: 동기·협력적·통째 교체를 같은 목록 변경으로 비교한다. 시간은 보여 주기만 하고 자동 테스트는 결과 화면과 DOM 노드 수로 판정한다(11장 9번 결정).
-- **테스트**: SL1(무작위 300쌍 결과 동일성, fast-check), SL2(양보·재개), SL3(취소), SL4(기본 스케줄러), LB1(같은 화면·같은 수정 수), LB2(1개 변경: 수정 1 vs 2,001개 생성), LB3(최신 상태 우선), LB4(전부 변경 시 Patch도 1,000개 수정).
+- **테스트**: SL1(무작위 300쌍 결과 동일성, fast-check), SL2(양보·재개), SL3(취소), SL4(기본 스케줄러), LB1(같은 화면·같은 수정 수), LB2(1개 변경: 수정 1 vs 2,001개 생성), LB3(최신 상태 우선), LB4(전부 변경 시 Patch도 1,000개 수정), LB5(가상 스크롤: 데이터 1만 개, DOM은 보이는 줄만, 스크롤 시 바뀐 노드 몇 개).
 - **남은 결정**: 팀 승인(ADR-0020 accepted), Phase 2 `update()`에 적용할지.
 
 ---
@@ -755,6 +755,7 @@ export class History<T> {
 | `core/diff.ts` | `diffSteps(oldV, newV)` | `VNode`, `VNode` | `{ out, steps }` | Diff를 노드 하나씩 멈출 수 있는 generator로 돌려줌. `diff`는 끝까지 한 번에 돌림 | ADR-0020 |
 | `core/slice.ts` | `diffSliced(oldV, newV, opts?)` | `VNode`, `VNode`, `{ budgetMs, now, schedule }` | `DiffTask` | 5ms씩 나눠 실행하고 양보, `cancel()`, `slices`, `longestSliceMs` | ADR-0020 |
 | `pages/lab/main.ts` | `startLab(doc)`, `buildList`, `countRecords` | 문서 | 실험실 핸들 | 동기·협력적·통째 교체 비교, DOM 노드 수·시간·입력 지연 표시 | ADR-0020 |
+| `pages/lab/virtual.ts` | `startVirtual(doc)`, `windowView`, `fullView` | 문서 | 가상 스크롤 핸들 | 보이는 줄만 Virtual DOM으로 만들고 스크롤 시 기존 diff·applyPatch로 갱신 | ADR-0020 |
 | `core/patch.ts` | `applyPatch(c, next, res, opts?)` | 컨테이너, 새 트리, `DiffResult`, 옵션 | `{ applied, recovered }` | `changes` 적용 → `pairs` `.dom` 복사 → `recordDom` → `animate` 하이라이트 (`t3` 복구 포함) | `ADR-0005`, `0006` |
 | `core/patch.ts` | `recordDom(v, node)` | `VNode`, `Node` | `void` | 새로 만든 실제 DOM 노드 참조를 재귀 기록 (`F1`) | `ADR-0005` |
 | `core/patch.ts` | `recoverPatch(c, next, err)` | 컨테이너, 새 트리, 오류 | `void` | 실패 시 컨테이너 통째 교체 + `recordDom` + 에러 기록 (`t3`) | `ADR-0005` |
