@@ -458,6 +458,8 @@ export function flushSync(): void {
 - 대신 `render(App, props, container, { onCommit })`의 `onCommit`에서 페이지(`pages/phase2/main.ts`)가 컴포넌트 트리 밖의 `#change-log`에 `formatChange` 한 줄씩 쓴다. Phase 1 페이지의 `#change-log`와 같은 방식이다.
 - `DebugPanel`은 남은 개수(TD9 두 번째 장소), 지금 몇 번째 렌더인지(`renderCount + 1`), `filteredTodos` 계산 횟수만 보여 준다.
 - useEffect 실행 횟수는 effect가 Patch 뒤에 돌기 때문에 `#effect-count`에 `onCommit`이 쓴다.
+- 2026-11-11: `DebugPanel`을 "엔진 계기판"으로 부르고, 화면 다시 그린 횟수·목록 다시 거른 횟수(useMemo가 건너뛴 횟수 = 렌더 수 − 계산 수)를 두 줄로 보여 준다. `#effect-count`는 "브라우저 탭 제목 바꾼 횟수(useEffect)"로 표시한다.
+- 2026-11-11: 각 컴포넌트 루트에 표시용 `data-c` 속성(값 고정, Diff에 영향 없음)을 붙이고, 페이지의 "🧩 컴포넌트 보기" 버튼이 CSS로 컴포넌트 경계와 이름을 겹쳐 보여 준다(엔진 변경 없음).
 - `FilterBar`는 `FilterButton`을 3번 쓴다. `TodoItem`과 함께 FR-13(재사용 3회 이상)을 만족한다.
 
 ### 8.7 구현 확인 결과 (2026-11-10)
