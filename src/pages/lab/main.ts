@@ -54,8 +54,9 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
   const out = doc.getElementById('lab-result');
   const inputLag = doc.getElementById('lab-lag');
   const now = () => performance.now();
-  let n = 1000;
-  let scope: Scope = 'all';
+  const initial = (name: string, fallback: string) => (doc.querySelector(`.seg[data-name="${name}"] .on`) as HTMLElement | null)?.dataset.v ?? fallback;
+  let n = Number(initial('size', '1000'));
+  let scope = initial('scope', 'all') as Scope;
   let version = 0;
   let current = buildList(n, 0, scope);
   let task: DiffTask | null = null;
@@ -63,6 +64,22 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
   mountTree(root, current);
 
   const show = (r: RunResult) => {
+    const card = doc.getElementById(`card-${r.mode}`);
+    if (card) {
+      const slow = r.longestMs >= 50;
+      const fill = card.querySelector<HTMLElement>('.fill');
+      if (fill) {
+        fill.style.width = `${Math.min(100, (r.longestMs / 100) * 100)}%`; // 막대 끝 = 100ms, 빨간 선 = 50ms
+        fill.classList.toggle('slow', slow);
+      }
+      const ms = card.querySelector('.ms');
+      if (ms) {
+        ms.textContent = `${r.longestMs.toFixed(0)}ms${slow ? ' 멈춤' : ''}`;
+        ms.classList.toggle('slow', slow);
+      }
+      const dom = card.querySelector('.dom');
+      if (dom) dom.textContent = r.created ? `새로 만든 노드 ${r.created.toLocaleString()}` : `DOM 수정 ${r.modified.toLocaleString()}`;
+    }
     if (!out) return;
     const name = { sync: 'Patch (동기)', sliced: 'Patch (협력적 스케줄링)', replace: '통째 교체' }[r.mode];
     out.textContent = [
@@ -131,7 +148,12 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
   doc.getElementById('lab-input')?.addEventListener('input', (e) => {
     const lag = now() - e.timeStamp;
     maxLag = Math.max(maxLag, lag);
-    if (inputLag) inputLag.textContent = `이번 입력 지연 ${lag.toFixed(0)}ms · 최대 ${maxLag.toFixed(0)}ms`;
+    const num = doc.getElementById('lab-lag-num');
+    if (num) {
+      num.textContent = maxLag.toFixed(0);
+      num.classList.toggle('slow', maxLag >= 50);
+    }
+    if (inputLag) inputLag.textContent = `입력 지연 (최대) · 방금 ${lag.toFixed(0)}ms`;
   });
 
   // 자동 업데이트: 3초 동안 계속 목록을 바꾼다. 그동안 입력칸에 타이핑해 보면 차이를 느낄 수 있다
@@ -150,12 +172,45 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
     }, 30);
   }
 
-  const val = (id: string) => (doc.getElementById(id) as HTMLSelectElement | null)?.value;
-  const mode = () => (val('lab-mode') ?? 'sync') as Mode;
-  doc.getElementById('lab-run')?.addEventListener('click', () => void update(mode()));
-  doc.getElementById('lab-auto')?.addEventListener('click', () => auto(mode()));
-  doc.getElementById('lab-size')?.addEventListener('change', () => reset(Number(val('lab-size')), (val('lab-scope') ?? 'all') as Scope));
-  doc.getElementById('lab-scope')?.addEventListener('change', () => reset(Number(val('lab-size')), (val('lab-scope') ?? 'all') as Scope));
+  // 세 방식을 같은 출발 상태에서 차례로 실행해 카드에 나란히 보여 준다
+  async function compare(): Promise<RunResult[]> {
+    const results: RunResult[] = [];
+    for (const m of ['sync', 'sliced', 'replace'] as Mode[]) {
+      reset(n, scope);
+      const r = await update(m);
+      if (r) results.push(r);
+    }
+    const v = doc.getElementById('lab-verdict');
+    const [sy, sl] = [results.find((r) => r.mode === 'sync'), results.find((r) => r.mode === 'sliced')];
+    if (v && sy && sl) {
+      v.textContent = sy.longestMs >= 50 && sl.longestMs < 50
+        ? `결론: 나눠서 하면 화면이 멈추는 시간이 ${sy.longestMs.toFixed(0)}ms → ${sl.longestMs.toFixed(0)}ms. 대신 끝나는 데는 조금 더 걸림`
+        : `이 크기에선 셋 다 50ms 안에 끝남 → 나눌 필요 없음. 1만 개로 해 보세요`;
+    }
+    return results;
+  }
+
+  const pick = (name: string, v: string) => {
+    doc.querySelectorAll(`.seg[data-name="${name}"] button`).forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.v === v));
+  };
+  doc.querySelectorAll<HTMLElement>('.seg button').forEach((b) =>
+    b.addEventListener('click', () => {
+      const name = (b.parentElement as HTMLElement).dataset.name;
+      if (name === 'size') reset(Number(b.dataset.v), scope);
+      if (name === 'scope') reset(n, b.dataset.v as Scope);
+      pick(name ?? '', b.dataset.v ?? '');
+    }),
+  );
+  const runBtn = doc.getElementById('lab-compare') as HTMLButtonElement | null;
+  runBtn?.addEventListener('click', async () => {
+    runBtn.disabled = true;
+    await compare();
+    runBtn.disabled = false;
+  });
+  doc.querySelectorAll<HTMLElement>('[data-auto]').forEach((b) => b.addEventListener('click', () => {
+    auto(b.dataset.auto as Mode);
+    (doc.getElementById('lab-input') as HTMLInputElement | null)?.focus();
+  }));
 
   // Long Task 관찰 (Chrome 등 지원 브라우저만)
   const lt = doc.getElementById('lab-longtask');
@@ -163,11 +218,11 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
     let count = 0;
     new PerformanceObserver((list) => {
       count += list.getEntries().length;
-      if (lt) lt.textContent = `브라우저가 기록한 Long Task ${count}회`;
+      if (lt) lt.textContent = `브라우저가 기록한 멈춤(Long Task) ${count}회`;
     }).observe({ type: 'longtask', buffered: false });
   } catch {
-    if (lt) lt.textContent = '이 브라우저는 Long Task 기록을 지원하지 않습니다 (Chrome에서 확인)';
+    if (lt) lt.textContent = '';
   }
 
-  return { update, reset, get current() { return current; } };
+  return { update, reset, compare, get current() { return current; } };
 }

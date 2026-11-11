@@ -8,89 +8,60 @@
   </head>
   <body>
     <main class="wrap">
-      <p><a href="../../../index.html">← 처음으로</a></p>
-      <h1>성능 실험실</h1>
-      <p class="lead">React가 왜 필요한지, 각 설계가 어떤 문제를 해결하는지 같은 화면에서 직접 실험해 봅니다. 숫자뿐 아니라 구현 복잡도, 추가 비용, 사용자 경험의 장단점도 함께 봅니다.</p>
-      <p class="lead">같은 목록 변경을 세 방식으로 적용해 봅니다. <b>협력적 스케줄링</b>은 Diff를 5ms씩 나눠 실행하고 사이사이 메인 스레드를 양보해서, 큰 목록을 처리하는 동안에도 입력이 막히지 않게 합니다. 실제 DOM에 반영하는 Commit은 나누지 않습니다.</p>
+      <a class="back" href="../../../index.html">← 처음으로</a>
+      <h1>⚡ 성능 실험실</h1>
+      <p class="lead">같은 목록을 세 방식으로 바꿔 봅니다</p>
 
-      <section class="panel controls">
-        <label>방식
-          <select id="lab-mode">
-            <option value="sync">Patch (동기, 지금 엔진)</option>
-            <option value="sliced">Patch (협력적 스케줄링)</option>
-            <option value="replace">통째 교체 (innerHTML 방식)</option>
-          </select>
-        </label>
-        <label>항목 수
-          <select id="lab-size">
-            <option value="1000">1,000</option>
-            <option value="10000">10,000</option>
-            <option value="30000">30,000</option>
-          </select>
-        </label>
-        <label>변경 범위
-          <select id="lab-scope">
-            <option value="all">전부 변경</option>
-            <option value="one">1개만 변경</option>
-          </select>
-        </label>
-        <button id="lab-run" type="button">한 번 업데이트</button>
-        <button id="lab-auto" type="button">3초 동안 계속 업데이트</button>
+      <section class="bar-controls">
+        <div class="seg" data-name="size">
+          <button data-v="1000" class="on">1천 개</button><button data-v="10000">1만 개</button><button data-v="30000">3만 개</button>
+        </div>
+        <div class="seg" data-name="scope">
+          <button data-v="one" class="on">1개만 바꾸기</button><button data-v="all">전부 바꾸기</button>
+        </div>
+        <button id="lab-compare" class="run">▶ 비교 실행</button>
       </section>
 
-      <section class="panel">
-        <label class="typing">업데이트하는 동안 여기에 계속 타이핑해 보세요
-          <input id="lab-input" type="text" placeholder="가나다라마바사…" />
-        </label>
-        <p id="lab-lag" class="muted">입력 지연이 여기에 표시됩니다</p>
-        <p id="lab-longtask" class="muted"></p>
-        <pre id="lab-result">버튼을 눌러 실행하세요</pre>
+      <section class="cards">
+        <article class="card" id="card-sync">
+          <h2>Patch</h2><p class="sub">바뀐 곳만 · 한 번에</p>
+          <div class="meter"><div class="fill"></div><div class="limit"></div></div>
+          <p class="ms">—</p><p class="dom">—</p>
+          <p class="pc"><span class="p">✅ 입력값 유지</span><span class="c">⚠ 구현 복잡</span></p>
+        </article>
+        <article class="card" id="card-sliced">
+          <h2>Patch + 나눠서</h2><p class="sub">5ms씩 쉬면서</p>
+          <div class="meter"><div class="fill"></div><div class="limit"></div></div>
+          <p class="ms">—</p><p class="dom">—</p>
+          <p class="pc"><span class="p">✅ 화면 안 멈춤</span><span class="c">⚠ 전체 시간 ↑</span></p>
+        </article>
+        <article class="card" id="card-replace">
+          <h2>통째 교체</h2><p class="sub">innerHTML 방식</p>
+          <div class="meter"><div class="fill"></div><div class="limit"></div></div>
+          <p class="ms">—</p><p class="dom">—</p>
+          <p class="pc"><span class="p">✅ 코드 단순</span><span class="c">⚠ 입력값 사라짐</span></p>
+        </article>
+      </section>
+      <p id="lab-verdict" class="verdict">▶ 비교 실행을 눌러 보세요</p>
+      <p class="legend">막대 = 화면이 멈춘 최장 시간 · <span class="red">빨간 선 50ms</span> 넘으면 클릭·입력이 밀림</p>
+
+      <section class="typing">
+        <h2>⌨️ 직접 느껴 보기</h2>
+        <p class="sub">1만 개로 바꾸고 → 버튼 누르고 → 바로 타이핑</p>
+        <div class="row">
+          <button data-auto="sync">Patch로 3초</button>
+          <button data-auto="sliced">나눠서 3초</button>
+        </div>
+        <input id="lab-input" type="text" placeholder="여기에 타이핑…" />
+        <p class="lag"><b id="lab-lag-num">0</b> ms <span id="lab-lag">입력 지연 (최대)</span></p>
+        <p id="lab-longtask" class="tiny"></p>
       </section>
 
-      <section class="panel note">
-        <b>읽는 법</b>
-        <ul>
-          <li><b>최장 연속 점유</b>가 50ms를 넘으면 그동안 클릭·입력을 처리하지 못합니다(Long Task).</li>
-          <li>10,000개 이상에서 동기 Patch는 Diff 동안 메인 스레드를 오래 잡습니다. 협력적 스케줄링은 Diff를 잘게 나눠 이 시간을 줄이지만, 전체 시간은 조금 늘어납니다.</li>
-          <li>Commit(실제 DOM 반영)은 나눌 수 없어서, 바뀐 노드가 많으면 여전히 길 수 있습니다. 그래서 DOM 변경량 자체를 줄이는 것이 중요합니다.</li>
-          <li><b>전부 변경</b>이면 Patch도 노드를 모두 고쳐야 해서 통째 교체와 큰 차이가 없을 수 있습니다. <b>1개만 변경</b>에서 차이가 분명합니다. Virtual DOM은 만능이 아닙니다.</li>
-          <li>시간은 기계와 브라우저마다 다릅니다. 자동 테스트는 노드 수와 결과 화면으로만 판정합니다.</li>
-        </ul>
-      </section>
-
-      <section class="panel">
-        <h2>실험 1 · DOM 업데이트: Patch vs 통째 교체</h2>
-        <p class="muted">방식에서 "Patch (동기)"와 "통째 교체"를 고르고, 변경 범위를 바꿔 가며 비교해 보세요.</p>
-        <div class="table-scroll"><table>
-          <thead><tr><th></th><th>Patch (Virtual DOM + Diff)</th><th>통째 교체 (innerHTML)</th></tr></thead>
-          <tbody>
-            <tr><th>실행 시간</th><td>바뀐 게 적을수록 Commit이 짧음. 대신 Diff가 트리 전체를 훑는 비용이 항상 듦</td><td>Diff가 없어 단순하지만, 매번 노드를 전부 새로 만듦</td></tr>
-            <tr><th>DOM 조작</th><td>1개 변경 → 수정 1</td><td>1개 변경이어도 노드 수만큼 새로 만들고 떼어 냄</td></tr>
-            <tr><th>사용자 경험</th><td>입력값·커서·스크롤·포커스가 유지됨</td><td>입력 중이던 값과 포커스, 스크롤이 사라짐</td></tr>
-            <tr><th>구현 복잡도</th><td>높음: 변환, Diff 6종, key 짝짓기, 적용 순서, 실패 복구</td><td>낮음: 문자열 한 줄</td></tr>
-            <tr><th>추가 비용</th><td>Virtual DOM 트리를 메모리에 두고 비교하는 비용</td><td>없음</td></tr>
-            <tr><th>언제 유리한가</th><td>일부만 자주 바뀌는 화면 (대부분의 앱)</td><td>전부 바뀌는 화면, 한 번 그리고 끝나는 화면</td></tr>
-          </tbody>
-        </table></div>
-      </section>
-
-      <section class="panel">
-        <h2>실험 3 · 협력적 스케줄링: 동기 렌더링 vs 시간 분할</h2>
-        <p class="muted">항목 10,000개로 바꾸고 "3초 동안 계속 업데이트"를 누른 뒤 입력칸에 타이핑해 보세요. 동기와 협력적 스케줄링에서 입력 지연을 비교합니다.</p>
-        <div class="table-scroll"><table>
-          <thead><tr><th></th><th>동기 렌더링 (지금 엔진)</th><th>협력적 스케줄링 (Diff 시간 분할)</th></tr></thead>
-          <tbody>
-            <tr><th>메인 스레드 점유</th><td>Diff + Commit을 한 번에. 10,000개에서 50ms를 넘기 쉬움 (Long Task)</td><td>Diff는 5ms 조각으로 나누고 사이사이 양보. 가장 긴 구간은 Commit</td></tr>
-            <tr><th>전체 시간</th><td>가장 짧음</td><td>양보·예약 비용 때문에 더 김</td></tr>
-            <tr><th>사용자 경험</th><td>업데이트 중 입력·클릭이 늦게 반영될 수 있음</td><td>업데이트 중에도 입력이 바로 처리됨</td></tr>
-            <tr><th>구현 복잡도</th><td>낮음: 함수 호출 한 번</td><td>높음: 멈추고 이어 하기, 취소, 최신 상태 우선, 비동기 흐름</td></tr>
-            <tr><th>결과 정확성</th><td>기준</td><td>같은 Diff 코드를 쓰므로 결과가 항상 같음 (무작위 300쌍 테스트)</td></tr>
-            <tr><th>한계</th><td>—</td><td>Commit은 나눌 수 없어 바뀐 노드가 많으면 여전히 김. React Fiber는 렌더 단계 전체를 나누지만, 우리는 Diff만 나눔</td></tr>
-          </tbody>
-        </table></div>
-      </section>
-
-      <section class="panel"><div id="lab-root"></div></section>
+      <details>
+        <summary>실험 중인 목록 보기</summary>
+        <pre id="lab-result"></pre>
+        <div id="lab-root"></div>
+      </details>
     </main>
     <script type="module">
       import { startLab } from './main.ts';
