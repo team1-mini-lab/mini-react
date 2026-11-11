@@ -5,7 +5,7 @@
 [![verify](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/verify.yml)
 [![pages](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml/badge.svg)](https://github.com/team1-mini-lab/mini-react/actions/workflows/pages.yml)
 
-![TypeScript](https://img.shields.io/badge/TypeScript-6_strict-3178C6?style=flat-square&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white) ![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?style=flat-square&logo=vitest&logoColor=white) ![jsdom](https://img.shields.io/badge/jsdom-DOM_test-F7DF1E?style=flat-square&logo=javascript&logoColor=white) ![ESLint](https://img.shields.io/badge/ESLint-10-4B32C3?style=flat-square&logo=eslint&logoColor=white) ![dependency-cruiser](https://img.shields.io/badge/dependency--cruiser-no_cycles-0A7EA4?style=flat-square) ![Stryker](https://img.shields.io/badge/Stryker-mutation-E74C3C?style=flat-square&logo=stryker&logoColor=white) ![fast-check](https://img.shields.io/badge/fast--check-property-8E44AD?style=flat-square) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI-2088FF?style=flat-square&logo=githubactions&logoColor=white) ![UI framework](https://img.shields.io/badge/UI_framework-0-111111?style=flat-square)
+**기술 스택** ![TypeScript](https://img.shields.io/badge/TypeScript-6_strict-3178C6?style=flat-square&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white) ![Vitest](https://img.shields.io/badge/Vitest-5-6E9F18?style=flat-square&logo=vitest&logoColor=white) ![jsdom](https://img.shields.io/badge/jsdom-DOM_test-F7DF1E?style=flat-square&logo=javascript&logoColor=white) ![ESLint](https://img.shields.io/badge/ESLint-10-4B32C3?style=flat-square&logo=eslint&logoColor=white) ![dependency-cruiser](https://img.shields.io/badge/dependency--cruiser-no_cycles-0A7EA4?style=flat-square) ![Stryker](https://img.shields.io/badge/Stryker-mutation-E74C3C?style=flat-square&logo=stryker&logoColor=white) ![fast-check](https://img.shields.io/badge/fast--check-property-8E44AD?style=flat-square) ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI-2088FF?style=flat-square&logo=githubactions&logoColor=white) ![UI framework](https://img.shields.io/badge/UI_framework-0-111111?style=flat-square)
 
 **▶ 데모: https://team1-mini-lab.github.io/mini-react/** — [Phase 1 검증 페이지](https://team1-mini-lab.github.io/mini-react/src/pages/phase1/index.html) · [Phase 2 Todo 앱](https://team1-mini-lab.github.io/mini-react/src/pages/phase2/index.html) · [성능 실험실](https://team1-mini-lab.github.io/mini-react/src/pages/lab/index.html)
 
@@ -156,10 +156,7 @@ flowchart LR
 <details>
 <summary><b>검증 프로세스 그림</b> — 사람이 정하고 · AI가 만들고 · 기계가 확인한다</summary>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/verify-loop-dark.png">
-  <img alt="AI 에이전트와 협업하는 검증 프로세스" src="docs/images/verify-loop.png">
-</picture>
+![AI 에이전트와 협업하는 검증 프로세스](docs/images/verify-loop-dark.png)
 
 </details>
 
