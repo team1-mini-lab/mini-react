@@ -27,17 +27,15 @@ export interface RunResult {
 }
 
 /** 목록: version이 바뀌면 scope에 따라 첫 항목만 또는 전부 글자가 바뀐다 */
-const NAMES = ['삼성전자', 'SK하이닉스', 'LG에너지솔루션', '현대차', 'NAVER', '카카오', '셀트리온', '기아', 'POSCO홀딩스', 'KB금융'];
+const NAMES = ['무선 이어폰', '텀블러', '노트북 거치대', '기계식 키보드', '백팩', '운동화', '전기포트', '모니터', '머그컵', '보조배터리'];
 
-/** 실시간 시세판: 종목 n개. version(시세 갱신 회차)이 바뀌면 scope에 따라 첫 종목만 또는 전 종목 가격이 바뀐다 */
+/** 상품 목록 n개. version이 바뀌면 scope에 따라 첫 상품만 또는 전부 가격이 바뀐다 */
 export function buildList(n: number, version: number, scope: Scope): VElement {
   return h('ul', { id: 'lab-list' }, ...Array.from({ length: n }, (_, i) => {
     const v = scope === 'all' || i === 0 ? version : 0;
-    const base = 10000 + ((i * 7919) % 90000);
-    const move = (((i + 1) * (v + 3) * 37) % 41) - 20; // -20 ~ +20 (‰)
-    const price = Math.round((base * (1000 + move)) / 1000) + v * 10; // 회차마다 반드시 값이 달라진다
-    const name = `${NAMES[i % NAMES.length]}${i >= NAMES.length ? ` ${Math.floor(i / NAMES.length)}` : ''}`;
-    return h('li', { key: String(i) }, `${name} · ${price.toLocaleString()}원 ${move >= 0 ? '▲' : '▼'}${(Math.abs(move) / 10).toFixed(1)}%`);
+    const price = 10000 + ((i * 7919) % 90000) + v * 100; // 회차마다 반드시 값이 달라진다
+    const name = `${NAMES[i % NAMES.length]} ${i + 1}`;
+    return h('li', { key: String(i) }, `${name} · ${price.toLocaleString()}원`);
   }));
 }
 
@@ -202,7 +200,7 @@ export function startLab(doc: Document = document, opts: { slice?: SliceOptions 
     if (v && sy && sl) {
       v.textContent = sy.longestMs >= 50 && sl.longestMs < 50
         ? `결론: 분할식으로 하면 화면이 멈추는 시간이 ${sy.longestMs.toFixed(0)}ms → ${sl.longestMs.toFixed(0)}ms. 대신 끝나는 데는 조금 더 걸림`
-        : `이 크기에선 셋 다 50ms 안에 끝남 → 나눌 필요 없음. 1만 종목으로 해 보세요`;
+        : `이 크기에선 셋 다 50ms 안에 끝남 → 나눌 필요 없음. 1만 개로 해 보세요`;
     }
     return results;
   }
