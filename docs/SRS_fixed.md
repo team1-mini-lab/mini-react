@@ -31,7 +31,7 @@
 
 > **ADR 번호 안내**: v1.2부터 `docs/adr/README.md`의 통합 번호를 쓴다. ADR-0001~0006은 `somage/works`의 설계 ADR(accepted), ADR-0007~0012는 `eungi/docs/adr`의 ADR을 다시 매긴 번호, ADR-0015는 컴포넌트 렌더링 ADR이다. ADR-0013·0014는 v1.4에서 superseded(각각 ADR-0005 6절 t3, ADR-0002 4절 s2로 대체)되어 `docs/adr/superseded/`에 보관한다. 대응은 5.1.3에 있다.
 >
-> **기준 설계 문서**: Phase 1 `docs/specs/SDD_final_phase1.md`, Phase 2 `docs/specs/SDD_final_phase2.md`. 저장소 루트의 `SDD-3.md`, `SDD_fixed_phase1.md`, `SDD_fixed_phase2.md`는 보관용이며 기준이 아니다.
+> **기준 설계 문서**: Phase 1 `docs/specs/SDD_final_phase1.md`, Phase 2 `docs/specs/SDD_final_phase2.md`. `docs/archive/root-2026-11-18/`의 `SDD-3.md`, `SDD_fixed_phase1.md`, `SDD_fixed_phase2.md`는 보관용이며 기준이 아니다.
 
 ---
 

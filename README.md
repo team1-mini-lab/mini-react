@@ -203,7 +203,7 @@ npm run dev
 ```
 
 - 첫째 줄: 필요한 패키지 설치 (일부 도구의 버전 요구가 서로 엇갈려 `--legacy-peer-deps`로 그 검사를 건너뜀)
-- 둘째 줄: 개발 서버 실행. http://localhost:5173 에서 Phase 1 · Phase 2 · 성능 실험실을 열 수 있음
+- 둘째 줄: 개발 서버 실행. http://localhost:3000 에서 Phase 1 · Phase 2 · 성능 실험실을 열 수 있음
 
 | 명령 | 하는 일 |
 |---|---|
